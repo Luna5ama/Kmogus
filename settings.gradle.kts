@@ -1,6 +1,7 @@
 pluginManagement {
     repositories {
         gradlePluginPortal()
+        maven("https://maven.fastmc.dev/")
     }
 
     val kotlinVersion: String by settings
@@ -11,4 +12,4 @@ pluginManagement {
 }
 
 include("core")
-include("struct-api", "struct-processor")
+include("struct-api", "struct-ksp")
