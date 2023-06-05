@@ -4,7 +4,7 @@ import java.lang.ref.PhantomReference
 import java.lang.ref.ReferenceQueue
 
 internal object MemoryCleaner : Runnable {
-    private val refQueue = ReferenceQueue<AddressHolder>()
+    private val refQueue = ReferenceQueue<MemoryPointerImpl>()
     private var refHead: Reference? = null
 
     init {
@@ -13,7 +13,7 @@ internal object MemoryCleaner : Runnable {
         thread.start()
     }
 
-    fun register(pointer: AddressHolder) {
+    fun register(pointer: MemoryPointerImpl) {
         val ref = Reference(pointer)
         synchronized(Reference.lock) {
             val head = refHead
@@ -31,7 +31,7 @@ internal object MemoryCleaner : Runnable {
         }
     }
 
-    private class Reference(ref: AddressHolder) : PhantomReference<AddressHolder>(ref, refQueue) {
+    private class Reference(ref: MemoryPointerImpl) : PhantomReference<MemoryPointerImpl>(ref, refQueue) {
         private val container = ref.container
 
         @JvmField
@@ -48,9 +48,6 @@ internal object MemoryCleaner : Runnable {
         }
 
         private fun tryRemove() {
-            if (prev === this && next === this) {
-                return
-            }
             synchronized(lock) {
                 if (prev === this && next === this) {
                     return

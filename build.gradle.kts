@@ -1,3 +1,5 @@
+@file:Suppress("UnstableApiUsage")
+
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -16,6 +18,7 @@ allprojects {
     java {
         toolchain {
             languageVersion.set(JavaLanguageVersion.of(8))
+            vendor.set(JvmVendorSpec.ADOPTIUM)
         }
         withSourcesJar()
     }
@@ -33,6 +36,7 @@ allprojects {
             javaToolchains {
                 this@test.javaLauncher.set(launcherFor {
                     languageVersion.set(JavaLanguageVersion.of(8))
+                    vendor.set(JvmVendorSpec.ADOPTIUM)
                 })
             }
             useJUnitPlatform()

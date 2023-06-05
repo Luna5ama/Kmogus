@@ -1,594 +1,405 @@
 package dev.luna5ama.kmogus
 
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
+import java.nio.ByteBuffer
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotEquals
 
 class MemoryPointerTest {
-
     @Test
-    fun testProperties() {
-        val pointer = MemoryPointer.malloc(0L)
-        assert(pointer.address == 0L)
-        assert(pointer.length == 0L)
-        pointer.address = Long.MAX_VALUE
-        pointer.length = Long.MAX_VALUE
-        assert(pointer.address == Long.MAX_VALUE)
-        assert(pointer.length == Long.MAX_VALUE)
-        assertFailsWith(IllegalArgumentException::class) {
-            pointer.address = -1
-        }
-        assertFailsWith(IllegalArgumentException::class) {
-            pointer.length = -1
-        }
-    }
+    fun mallocEmpty() {
+        val pointer = MemoryPointer.malloc(0)
+        assertEquals(0L, pointer.address, "Empty pointer should have address 0")
+        assertEquals(0L, pointer.length, "Empty pointer should have length 0")
 
-    @Test
-    fun testAllocate() {
-        val pointer = MemoryPointer.malloc(1)
-        assert(pointer.address != 0L)
-        assert(pointer.length == 1L)
         pointer.free()
     }
 
     @Test
-    fun testAllocateZero() {
-        val pointer = MemoryPointer.malloc(0L)
-        assert(pointer.address == 0L)
-        assert(pointer.length == 0L)
+    fun mallocNonEmpty() {
+        val pointer = MemoryPointer.malloc(69)
+        assertNotEquals(0L, pointer.address, "Non-empty pointer should have non-zero address")
+        assertEquals(69L, pointer.length, "Expected length 69")
+
         pointer.free()
     }
 
     @Test
-    fun testAllocateNegative() {
+    fun mallocIllegal() {
         assertFailsWith(IllegalArgumentException::class) {
             MemoryPointer.malloc(-1)
         }
+        assertFailsWith(IllegalArgumentException::class) {
+            MemoryPointer.malloc(-999)
+        }
+        assertFailsWith(IllegalArgumentException::class) {
+            MemoryPointer.malloc(Int.MIN_VALUE.toLong())
+        }
+        assertFailsWith(IllegalArgumentException::class) {
+            MemoryPointer.malloc(Long.MIN_VALUE)
+        }
     }
 
     @Test
-    fun testCalloc() {
-        val pointer = MemoryPointer.calloc(TestUtils.TEST_DATA_SIZE.toLong())
-        assert(pointer.address != 0L)
-        assert(pointer.length == TestUtils.TEST_DATA_SIZE.toLong())
-        for (i in 0 until pointer.length) {
-            assert(pointer.getByteUnsafe(i) == 0.toByte())
-        }
+    fun callocEmpty() {
+        val pointer = MemoryPointer.calloc(0)
+        assertEquals(0L, pointer.address, "Empty pointer should have address 0")
+        assertEquals(0L, pointer.length, "Empty pointer should have length 0")
+
         pointer.free()
     }
 
     @Test
-    fun testRawWrapping() {
+    fun callocNonEmpty() {
+        val pointer = MemoryPointer.calloc(69)
+        assertNotEquals(0L, pointer.address, "Non-empty pointer should have non-zero address")
+        assertEquals(69L, pointer.length, "Expected length 69")
+
+        for (i in 0 until 69) {
+            assertEquals(0, UNSAFE.getByte(pointer.address + i), "Byte at index $i is not 0")
+        }
+
+        pointer.free()
+    }
+
+    @Test
+    fun callocIllegal() {
         assertFailsWith(IllegalArgumentException::class) {
-            MemoryPointer.wrap(0, -1)
+            MemoryPointer.calloc(-1)
+        }
+        assertFailsWith(IllegalArgumentException::class) {
+            MemoryPointer.calloc(-999)
+        }
+        assertFailsWith(IllegalArgumentException::class) {
+            MemoryPointer.calloc(Int.MIN_VALUE.toLong())
+        }
+        assertFailsWith(IllegalArgumentException::class) {
+            MemoryPointer.calloc(Long.MIN_VALUE)
+        }
+    }
+
+    @Test
+    fun reallocWith0NoInit() {
+        val pointer = MemoryPointer.malloc(0)
+        pointer.reallocate(8, false)
+        assertNotEquals(0L, pointer.address, "Non-empty pointer should have non-zero address")
+        assertEquals(8L, pointer.length, "Expected length 8")
+        pointer.free()
+    }
+
+    @Test
+    fun reallocWith0Init() {
+        val pointer = MemoryPointer.malloc(0)
+        pointer.reallocate(8, true)
+        assertNotEquals(0L, pointer.address, "Non-empty pointer should have non-zero address")
+        assertEquals(8L, pointer.length, "Expected length 8")
+
+        for (i in 0 until 8) {
+            assertEquals(0, UNSAFE.getByte(pointer.address + i), "Byte at index $i is not 0")
+        }
+
+        pointer.free()
+    }
+
+    @Test
+    fun reallocExpandNoInit() {
+        val pointer = MemoryPointer.malloc(4)
+        UNSAFE.putByte(pointer.address, 69)
+        UNSAFE.putByte(pointer.address + 1, 42)
+        UNSAFE.putByte(pointer.address + 2, -1)
+        UNSAFE.putByte(pointer.address + 3, 5)
+
+        pointer.reallocate(8, false)
+        assertEquals(8L, pointer.length, "Expected length 8")
+        assertEquals(69, UNSAFE.getByte(pointer.address), "Byte at index 0 is not 69")
+        assertEquals(42, UNSAFE.getByte(pointer.address + 1), "Byte at index 1 is not 42")
+        assertEquals(-1, UNSAFE.getByte(pointer.address + 2), "Byte at index 2 is not -1")
+        assertEquals(5, UNSAFE.getByte(pointer.address + 3), "Byte at index 3 is not 5")
+
+        pointer.free()
+    }
+
+    @Test
+    fun reallocExpandInit() {
+        val pointer = MemoryPointer.malloc(4)
+        UNSAFE.putByte(pointer.address, 69)
+        UNSAFE.putByte(pointer.address + 1, 42)
+        UNSAFE.putByte(pointer.address + 2, -1)
+        UNSAFE.putByte(pointer.address + 3, 5)
+
+        pointer.reallocate(8, true)
+        assertEquals(8L, pointer.length, "Expected length 8")
+        assertEquals(69, UNSAFE.getByte(pointer.address), "Byte at index 0 is not 69")
+        assertEquals(42, UNSAFE.getByte(pointer.address + 1), "Byte at index 1 is not 42")
+        assertEquals(-1, UNSAFE.getByte(pointer.address + 2), "Byte at index 2 is not -1")
+        assertEquals(5, UNSAFE.getByte(pointer.address + 3), "Byte at index 3 is not 5")
+
+        assertEquals(0, UNSAFE.getByte(pointer.address + 4), "Byte at index 4 is not 0")
+        assertEquals(0, UNSAFE.getByte(pointer.address + 5), "Byte at index 5 is not 0")
+        assertEquals(0, UNSAFE.getByte(pointer.address + 6), "Byte at index 6 is not 0")
+        assertEquals(0, UNSAFE.getByte(pointer.address + 7), "Byte at index 7 is not 0")
+
+        pointer.free()
+    }
+
+    @Test
+    fun reallocShrinkNoInit() {
+        val pointer = MemoryPointer.malloc(4)
+        UNSAFE.putByte(pointer.address, 69)
+        UNSAFE.putByte(pointer.address + 1, 42)
+        UNSAFE.putByte(pointer.address + 2, -1)
+        UNSAFE.putByte(pointer.address + 3, 5)
+
+        pointer.reallocate(2, false)
+        assertEquals(2L, pointer.length, "Expected length 8")
+        assertEquals(69, UNSAFE.getByte(pointer.address), "Byte at index 0 is not 69")
+        assertEquals(42, UNSAFE.getByte(pointer.address + 1), "Byte at index 1 is not 42")
+
+        pointer.free()
+    }
+
+    @Test
+    fun reallocShrinkInit() {
+        val pointer = MemoryPointer.malloc(4)
+        UNSAFE.putByte(pointer.address, 69)
+        UNSAFE.putByte(pointer.address + 1, 42)
+        UNSAFE.putByte(pointer.address + 2, -1)
+        UNSAFE.putByte(pointer.address + 3, 5)
+
+        pointer.reallocate(2, true)
+        assertEquals(2L, pointer.length, "Expected length 8")
+        assertEquals(69, UNSAFE.getByte(pointer.address), "Byte at index 0 is not 69")
+        assertEquals(42, UNSAFE.getByte(pointer.address + 1), "Byte at index 1 is not 42")
+
+        pointer.free()
+    }
+
+    @Test
+    fun reallocTo0NoInit() {
+        val pointer = MemoryPointer.malloc(4)
+        UNSAFE.putByte(pointer.address, 69)
+        UNSAFE.putByte(pointer.address + 1, 42)
+        UNSAFE.putByte(pointer.address + 2, -1)
+        UNSAFE.putByte(pointer.address + 3, 5)
+
+        pointer.reallocate(0, true)
+        assertEquals(0L, pointer.address, "Expected address 0")
+        assertEquals(0L, pointer.length, "Expected length 0")
+
+        pointer.free()
+    }
+
+    @Test
+    fun reallocTo0Init() {
+        val pointer = MemoryPointer.malloc(4)
+        UNSAFE.putByte(pointer.address, 69)
+        UNSAFE.putByte(pointer.address + 1, 42)
+        UNSAFE.putByte(pointer.address + 2, -1)
+        UNSAFE.putByte(pointer.address + 3, 5)
+
+        pointer.reallocate(0, true)
+        assertEquals(0L, pointer.address, "Expected address 0")
+        assertEquals(0L, pointer.length, "Expected length 0")
+
+        pointer.free()
+    }
+
+    @Test
+    fun reallocIllegal() {
+        val pointer = MemoryPointer.malloc(4)
+
+        assertFailsWith(IllegalArgumentException::class) {
+            pointer.reallocate(-1, true)
         }
 
         assertFailsWith(IllegalArgumentException::class) {
-            MemoryPointer.wrap(-1, 0)
+            pointer.reallocate(-1, false)
         }
 
-        val address = UNSAFE.allocateMemory(TestUtils.TEST_DATA_SIZE.toLong())
-        val pointer = MemoryPointer.wrap(address, TestUtils.TEST_DATA_SIZE.toLong())
-        assert(pointer.address == address)
-        assert(pointer.length == TestUtils.TEST_DATA_SIZE.toLong())
+        pointer.free()
+    }
+
+    @Test
+    fun wrappedPointer() {
+        val pointer = UNSAFE.allocateMemory(4)
+
+        val wrapped = MemoryPointer.wrap(pointer, 4)
+        assertEquals(pointer, wrapped.address, "Expected address: 0x%016X, actual: 0x%016X".format(pointer, wrapped.address))
+        assertEquals(4L, wrapped.length, "Expected length 4")
 
         assertFailsWith(UnsupportedOperationException::class) {
-            pointer.free()
+            wrapped.free()
         }
-
-        val a = TestUtils.randomBytes()
-        UNSAFE.copyMemory(a, BYTE_ARRAY_OFFSET.toLong(), null, address, a.size.toLong())
-
-        for (i in a.indices) {
-            assert(pointer.getByteUnsafe(i.toLong()) == a[i])
-        }
-
-        UNSAFE.freeMemory(address)
-    }
-
-    @Test
-    fun testNioBufferWrapping() {
-        val buffer = TestUtils.allocDirectBuffer(TestUtils.TEST_DATA_SIZE * 4)
-        val pointer = MemoryPointer.wrap(buffer)
 
         assertFailsWith(UnsupportedOperationException::class) {
-            pointer.free()
+            wrapped.reallocate(8, true)
         }
 
-        val a = TestUtils.randomInts()
-        buffer.asIntBuffer().put(a)
-
-        for (i in a.indices) {
-            assert(pointer.getIntUnsafe(i * 4L) == a[i])
-            assert(pointer.getIntUnsafe(i * 4L) == buffer.getInt(i * 4))
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(8, false)
         }
 
-        val b = TestUtils.randomInts()
-        pointer.setIntsUnsafe(b)
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(1, true)
+        }
 
-        for (i in b.indices) {
-            assert(buffer.getInt(i * 4) == b[i])
-            assert(buffer.getInt(i * 4) == pointer.getIntUnsafe(i * 4L))
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(1, false)
+        }
+
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(0, true)
+        }
+
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(0, false)
+        }
+
+        UNSAFE.freeMemory(pointer)
+    }
+
+    @Test
+    fun wrappedBuffer() {
+        val buffer = ByteBuffer.allocateDirect(8)
+        buffer.put(4, 1)
+        buffer.put(5, 2)
+        buffer.put(6, 3)
+        buffer.put(7, 4)
+
+        val wrapped = MemoryPointer.wrap(buffer)
+        assertEquals(buffer.address, wrapped.address, "Expected address: 0x%016X, actual: 0x%016X".format(buffer.address, wrapped.address))
+        assertEquals(8L, wrapped.length, "Expected length 8")
+
+        UNSAFE.putByte(wrapped.address, 69)
+        UNSAFE.putByte(wrapped.address + 1, 42)
+        UNSAFE.putByte(wrapped.address + 2, -1)
+        UNSAFE.putByte(wrapped.address + 3, 5)
+
+        assertEquals(69, buffer.get(0), "Byte at index 0 is not 69")
+        assertEquals(42, buffer.get(1), "Byte at index 1 is not 42")
+        assertEquals(-1, buffer.get(2), "Byte at index 2 is not -1")
+        assertEquals(5, buffer.get(3), "Byte at index 3 is not 5")
+
+        assertEquals(1, buffer.get(4), "Byte at index 4 was modified")
+        assertEquals(2, buffer.get(5), "Byte at index 5 was modified")
+        assertEquals(3, buffer.get(6), "Byte at index 6 was modified")
+        assertEquals(4, buffer.get(7), "Byte at index 7 was modified")
+
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.free()
+        }
+
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(16, true)
+        }
+
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(16, false)
+        }
+
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(8, true)
+        }
+
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(8, false)
+        }
+
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(1, true)
+        }
+
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(1, false)
+        }
+
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(0, true)
+        }
+
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(0, false)
+        }
+
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(-1, true)
+        }
+
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(-1, false)
         }
     }
 
     @Test
-    fun testCheckOffset() {
-        val pointer = MemoryPointer.malloc(8L)
+    fun wrappedBufferOffset() {
+        val buffer = ByteBuffer.allocateDirect(8)
+        buffer.put(0, 1)
+        buffer.put(1, 2)
+        buffer.put(2, 3)
+        buffer.put(3, 4)
 
-        val checkOffsetMethod = MemoryPointer::class.java.getDeclaredMethod(
-            "checkOffset",
-            Long::class.javaPrimitiveType,
-            Long::class.javaPrimitiveType
-        )
-        checkOffsetMethod.isAccessible = true
+        val wrapped = MemoryPointer.wrap(buffer, 4L)
+        assertEquals(buffer.address + 4L, wrapped.address, "Expected address: 0x%016X, actual: 0x%016X".format(buffer.address + 4L, wrapped.address))
+        assertEquals(4L, wrapped.length, "Expected length 4")
 
-        val checkOffset: MemoryPointer.(Long, Long) -> Unit = { offset, size ->
-            runCatching {
-                checkOffsetMethod.invoke(this, offset, size)
-            }.onFailure {
-                throw it.cause!!
-            }
+        UNSAFE.putByte(wrapped.address, 69)
+        UNSAFE.putByte(wrapped.address + 1, 42)
+        UNSAFE.putByte(wrapped.address + 2, -1)
+        UNSAFE.putByte(wrapped.address + 3, 5)
+
+        assertEquals(69, buffer.get(4), "Byte at index 4 is not 69")
+        assertEquals(42, buffer.get(5), "Byte at index 5 is not 42")
+        assertEquals(-1, buffer.get(6), "Byte at index 6 is not -1")
+        assertEquals(5, buffer.get(7), "Byte at index 7 is not 5")
+
+        assertEquals(1, buffer.get(0), "Byte at index 0 was modified")
+        assertEquals(2, buffer.get(1), "Byte at index 1 was modified")
+        assertEquals(3, buffer.get(2), "Byte at index 2 was modified")
+        assertEquals(4, buffer.get(3), "Byte at index 3 was modified")
+
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.free()
         }
 
-        assertDoesNotThrow {
-            pointer.checkOffset(0, 1L)
-            pointer.checkOffset(0, 4L)
-            pointer.checkOffset(7, 1L)
-            pointer.checkOffset(4, 4L)
-        }
-        assertFailsWith(IndexOutOfBoundsException::class) {
-            checkOffset(pointer, -1, 1L)
-        }
-        assertFailsWith(IndexOutOfBoundsException::class) {
-            checkOffset(pointer, -1, 4L)
-        }
-        assertFailsWith(IndexOutOfBoundsException::class) {
-            checkOffset(pointer, 8, 1L)
-        }
-        assertFailsWith(IndexOutOfBoundsException::class) {
-            checkOffset(pointer, 5, 4L)
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(16, true)
         }
 
-        pointer.free()
-    }
-
-    @Test
-    fun checkIndexRange() {
-        val pointer = MemoryPointer.malloc(8L)
-        testCheckIndexRange(getCheckIndexRange("checkSrcIndexRange"), pointer)
-        testCheckIndexRange(getCheckByteIndexRange("checkSrcByteIndexRange"), pointer)
-        testCheckIndexRange(getCheckIndexRange("checkDstIndexRange"), pointer)
-        testCheckIndexRange(getCheckByteIndexRange("checkDstByteIndexRange"), pointer)
-        pointer.free()
-    }
-
-    private fun getCheckByteIndexRange(name: String): MemoryPointer.(Int, Int) -> Unit {
-        val checkSrcByteIndexRangeMethod = MemoryPointer::class.java.getDeclaredMethod(
-            name,
-            Long::class.javaPrimitiveType,
-            Int::class.javaPrimitiveType
-        )
-        checkSrcByteIndexRangeMethod.isAccessible = true
-
-        val checkSrcByteIndexRange: MemoryPointer.(Int, Int) -> Unit = { srcIndex, length ->
-            runCatching {
-                checkSrcByteIndexRangeMethod.invoke(this, srcIndex, length)
-            }.onFailure {
-                throw it.cause!!
-            }
-        }
-        return checkSrcByteIndexRange
-    }
-
-    private fun getCheckIndexRange(name: String): MemoryPointer.(Int, Int) -> Unit {
-        val checkSrcIndexRangeMethod = MemoryPointer::class.java.getDeclaredMethod(
-            name,
-            Int::class.javaPrimitiveType,
-            Int::class.javaPrimitiveType,
-            Int::class.javaPrimitiveType
-        )
-        checkSrcIndexRangeMethod.isAccessible = true
-
-        val checkSrcIndexRange: MemoryPointer.(Int, Int) -> Unit = { srcIndex, length ->
-            runCatching {
-                checkSrcIndexRangeMethod.invoke(this, srcIndex, length, 8)
-            }.onFailure {
-                throw it.cause!!
-            }
-        }
-        return checkSrcIndexRange
-    }
-
-    private fun testCheckIndexRange(
-        checkIndexRange: MemoryPointer.(Int, Int) -> Unit,
-        pointer: MemoryPointer
-    ) {
-        assertDoesNotThrow {
-            checkIndexRange(pointer, 0, 0)
-            checkIndexRange(pointer, 0, 1)
-            checkIndexRange(pointer, 0, 8)
-            checkIndexRange(pointer, 7, 1)
-            checkIndexRange(pointer, 3, 4)
-            checkIndexRange(pointer, 8, 0)
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(16, false)
         }
 
-        assertFailsWith(IndexOutOfBoundsException::class) {
-            checkIndexRange(pointer, -1, 1)
-        }
-        assertFailsWith(IndexOutOfBoundsException::class) {
-            checkIndexRange(pointer, 9, 1)
-        }
-        assertFailsWith(IndexOutOfBoundsException::class) {
-            checkIndexRange(pointer, 0, -1)
-        }
-        assertFailsWith(IndexOutOfBoundsException::class) {
-            checkIndexRange(pointer, 0, 9)
-        }
-    }
-
-    @Test
-    fun testByteSingle() {
-        val array = TestUtils.randomBytes()
-
-        val pointer = MemoryPointer.malloc(array.size.toLong())
-
-        for (i in array.indices) {
-            pointer.setByteUnsafe(i.toLong(), array[i])
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(8, true)
         }
 
-        for (i in array.indices) {
-            assert(array[i] == pointer.getByteUnsafe(i.toLong()))
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(8, false)
         }
 
-        pointer.free()
-    }
-
-    @Test
-    fun testShortSingle() {
-        val array = TestUtils.randomShorts()
-
-        val pointer = MemoryPointer.malloc(array.size.toLong() * 2)
-
-        for (i in array.indices) {
-            pointer.setShortUnsafe(i * 2L, array[i])
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(1, true)
         }
 
-        for (i in array.indices) {
-            assert(array[i] == pointer.getShortUnsafe(i * 2L))
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(1, false)
         }
 
-        pointer.free()
-    }
-
-    @Test
-    fun testIntSingle() {
-        val array = TestUtils.randomInts()
-
-        val pointer = MemoryPointer.malloc(array.size.toLong() * 4)
-
-        for (i in array.indices) {
-            pointer.setIntUnsafe(i * 4L, array[i])
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(0, true)
         }
 
-        for (i in array.indices) {
-            assert(array[i] == pointer.getIntUnsafe(i * 4L))
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(0, false)
         }
 
-        pointer.free()
-    }
-
-    @Test
-    fun testLongSingle() {
-        val array = TestUtils.randomLongs()
-
-        val pointer = MemoryPointer.malloc(array.size.toLong() * 8)
-
-        for (i in array.indices) {
-            pointer.setLongUnsafe(i * 8L, array[i])
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(-1, true)
         }
 
-        for (i in array.indices) {
-            assert(array[i] == pointer.getLongUnsafe(i * 8L))
+        assertFailsWith(UnsupportedOperationException::class) {
+            wrapped.reallocate(-1, false)
         }
-
-        pointer.free()
-    }
-
-    @Test
-    fun testFloatSingle() {
-        val array = TestUtils.randomFloats()
-
-        val pointer = MemoryPointer.malloc(array.size.toLong() * 4)
-
-        for (i in array.indices) {
-            pointer.setFloatUnsafe(i * 4L, array[i])
-        }
-
-        for (i in array.indices) {
-            assert(array[i] == pointer.getFloatUnsafe(i * 4L))
-        }
-
-        pointer.free()
-    }
-
-    @Test
-    fun testDoubleSingle() {
-        val array = TestUtils.randomDoubles()
-
-        val pointer = MemoryPointer.malloc(array.size.toLong() * 8)
-
-        for (i in array.indices) {
-            pointer.setDoubleUnsafe(i * 8L, array[i])
-        }
-
-        for (i in array.indices) {
-            assert(array[i] == pointer.getDoubleUnsafe(i * 8L))
-        }
-
-        pointer.free()
-    }
-
-    @Test
-    fun testByteBulk() {
-        val array = TestUtils.randomBytes()
-
-        val pointer = MemoryPointer.malloc(array.size.toLong())
-
-        pointer.setBytesUnsafe(array)
-
-        for (i in array.indices) {
-            assert(array[i] == pointer.getByteUnsafe(i.toLong()))
-        }
-
-        assert(array.contentEquals(pointer.getBytesUnsafe()))
-        assert(array.contentEquals(pointer.getBytesUnsafe(ByteArray(array.size))))
-
-        pointer.free()
-    }
-
-
-    @Test
-    fun testShortBulk() {
-        val array = TestUtils.randomShorts()
-
-        val pointer = MemoryPointer.malloc(array.size.toLong() * 2)
-
-        pointer.setShortsUnsafe(array)
-
-        for (i in array.indices) {
-            assert(array[i] == pointer.getShortUnsafe(i * 2L))
-        }
-
-        assert(array.contentEquals(pointer.getShortsUnsafe()))
-        assert(array.contentEquals(pointer.getShortsUnsafe(ShortArray(array.size))))
-
-        pointer.free()
-    }
-
-    @Test
-    fun testIntBulk() {
-        val array = TestUtils.randomInts()
-
-        val pointer = MemoryPointer.malloc(array.size.toLong() * 4)
-
-        pointer.setIntsUnsafe(array)
-
-        for (i in array.indices) {
-            assert(array[i] == pointer.getIntUnsafe(i * 4L))
-        }
-
-        assert(array.contentEquals(pointer.getIntsUnsafe()))
-        assert(array.contentEquals(pointer.getIntsUnsafe(IntArray(array.size))))
-
-        pointer.free()
-    }
-
-    @Test
-    fun testLongBulk() {
-        val array = TestUtils.randomLongs()
-
-        val pointer = MemoryPointer.malloc(array.size.toLong() * 8)
-
-        pointer.setLongsUnsafe(array)
-
-        for (i in array.indices) {
-            assert(array[i] == pointer.getLongUnsafe(i * 8L))
-        }
-
-        assert(array.contentEquals(pointer.getLongsUnsafe()))
-        assert(array.contentEquals(pointer.getLongsUnsafe(LongArray(array.size))))
-
-        pointer.free()
-    }
-
-    @Test
-    fun testFloatBulk() {
-        val array = TestUtils.randomFloats()
-
-        val pointer = MemoryPointer.malloc(array.size.toLong() * 4)
-
-        pointer.setFloatsUnsafe(array)
-
-        for (i in array.indices) {
-            assert(array[i] == pointer.getFloatUnsafe(i * 4L))
-        }
-
-        assert(array.contentEquals(pointer.getFloatsUnsafe()))
-        assert(array.contentEquals(pointer.getFloatsUnsafe(FloatArray(array.size))))
-
-        pointer.free()
-    }
-
-    @Test
-    fun testDoubleBulk() {
-        val array = TestUtils.randomDoubles()
-
-        val pointer = MemoryPointer.malloc(array.size.toLong() * 8)
-
-        pointer.setDoublesUnsafe(array)
-
-        for (i in array.indices) {
-            assert(array[i] == pointer.getDoubleUnsafe(i * 8L))
-        }
-
-        assert(array.contentEquals(pointer.getDoublesUnsafe()))
-        assert(array.contentEquals(pointer.getDoublesUnsafe(DoubleArray(array.size))))
-
-        pointer.free()
-    }
-
-    @Test
-    fun testCheckForEachIndexRange() {
-        val pointer = MemoryPointer.malloc(8L)
-
-        assertDoesNotThrow {
-            pointer.checkForeachIndexRange(0, 8, 1)
-            pointer.checkForeachIndexRange(0, 2, 4)
-            pointer.checkForeachIndexRange(0, 1, 1)
-            pointer.checkForeachIndexRange(0, 1, 4)
-            pointer.checkForeachIndexRange(8, 0, 1)
-            pointer.checkForeachIndexRange(8, 0, 4)
-            pointer.checkForeachIndexRange(7, 1, 1)
-            pointer.checkForeachIndexRange(3, 1, 4)
-            pointer.checkForeachIndexRange(3, 1, 4)
-        }
-        assertFailsWith(IndexOutOfBoundsException::class) {
-            pointer.checkForeachIndexRange(-1, 1, 1)
-        }
-        assertFailsWith(IndexOutOfBoundsException::class) {
-            pointer.checkForeachIndexRange(9, 1, 1)
-        }
-        assertFailsWith(IndexOutOfBoundsException::class) {
-            pointer.checkForeachIndexRange(0, -1, 1)
-        }
-        assertFailsWith(IndexOutOfBoundsException::class) {
-            pointer.checkForeachIndexRange(0, 9, 1)
-        }
-        assertFailsWith(IndexOutOfBoundsException::class) {
-            pointer.checkForeachIndexRange(0, 1, 9)
-        }
-
-        pointer.free()
-    }
-
-    @Test
-    fun testIterationByte() {
-        val array = TestUtils.randomBytes()
-
-        val pointer = MemoryPointer.malloc(array.size.toLong())
-
-        pointer.setBytesUnsafe(array)
-
-        var index = 0
-        pointer.forEachByteUnsafe { v ->
-            assert(v == array[index++])
-        }
-
-        pointer.forEachByteIndexedUnsafe(TestUtils.TEST_DATA_SIZE / 4L, TestUtils.TEST_DATA_SIZE / 2) { i, v ->
-            assert(v == array[i + TestUtils.TEST_DATA_SIZE / 4])
-        }
-
-        pointer.free()
-    }
-
-    @Test
-    fun testIterationShort() {
-        val array = TestUtils.randomShorts()
-
-        val pointer = MemoryPointer.malloc(array.size.toLong() * 2)
-
-        pointer.setShortsUnsafe(array)
-
-        var index = 0
-        pointer.forEachShortUnsafe { v ->
-            assert(v == array[index++])
-        }
-
-        pointer.forEachShortIndexedUnsafe(TestUtils.TEST_DATA_SIZE / 4L * 2L, TestUtils.TEST_DATA_SIZE / 2) { i, v ->
-            assert(v == array[i + TestUtils.TEST_DATA_SIZE / 4])
-        }
-
-        pointer.free()
-    }
-
-    @Test
-    fun testIterationInt() {
-        val array = TestUtils.randomInts()
-
-        val pointer = MemoryPointer.malloc(array.size.toLong() * 4)
-
-        pointer.setIntsUnsafe(array)
-
-        var index = 0
-        pointer.forEachIntUnsafe { v ->
-            assert(v == array[index++])
-        }
-
-        pointer.forEachIntIndexedUnsafe(TestUtils.TEST_DATA_SIZE / 4L * 4L, TestUtils.TEST_DATA_SIZE / 2) { i, v ->
-            assert(v == array[i + TestUtils.TEST_DATA_SIZE / 4])
-        }
-
-        pointer.free()
-    }
-
-    @Test
-    fun testIterationLong() {
-        val array = TestUtils.randomLongs()
-
-        val pointer = MemoryPointer.malloc(array.size.toLong() * 8)
-
-        pointer.setLongsUnsafe(array)
-
-        var index = 0
-        pointer.forEachLongUnsafe { v ->
-            assert(v == array[index++])
-        }
-
-        pointer.forEachLongIndexedUnsafe(TestUtils.TEST_DATA_SIZE / 4L * 8L, TestUtils.TEST_DATA_SIZE / 2) { i, v ->
-            assert(v == array[i + TestUtils.TEST_DATA_SIZE / 4])
-        }
-
-        pointer.free()
-    }
-
-    @Test
-    fun testIterationFloat() {
-        val array = TestUtils.randomFloats()
-
-        val pointer = MemoryPointer.malloc(array.size.toLong() * 4)
-
-        pointer.setFloatsUnsafe(array)
-
-        var index = 0
-        pointer.forEachFloatUnsafe { v ->
-            assert(v == array[index++])
-        }
-
-        pointer.forEachFloatIndexedUnsafe(TestUtils.TEST_DATA_SIZE / 4L * 4L, TestUtils.TEST_DATA_SIZE / 2) { i, v ->
-            assert(v == array[i + TestUtils.TEST_DATA_SIZE / 4])
-        }
-
-        pointer.free()
-    }
-
-    @Test
-    fun testIterationDouble() {
-        val array = TestUtils.randomDoubles()
-
-        val pointer = MemoryPointer.malloc(array.size.toLong() * 8)
-
-        pointer.setDoublesUnsafe(array)
-
-        var index = 0
-        pointer.forEachDouble { v ->
-            assert(v == array[index++])
-        }
-
-        pointer.forEachDoubleIndexed(TestUtils.TEST_DATA_SIZE / 4L * 8L, TestUtils.TEST_DATA_SIZE / 2) { i, v ->
-            assert(v == array[i + TestUtils.TEST_DATA_SIZE / 4])
-        }
-
-        pointer.free()
     }
 }
