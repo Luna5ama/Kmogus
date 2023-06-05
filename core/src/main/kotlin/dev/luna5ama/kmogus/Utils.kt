@@ -9,13 +9,6 @@ internal val UNSAFE = run {
     field.get(null) as Unsafe
 }
 
-internal val BYTE_ARRAY_OFFSET = UNSAFE.arrayBaseOffset(ByteArray::class.java)
-internal val SHORT_ARRAY_OFFSET = UNSAFE.arrayBaseOffset(ShortArray::class.java)
-internal val INT_ARRAY_OFFSET = UNSAFE.arrayBaseOffset(IntArray::class.java)
-internal val LONG_ARRAY_OFFSET = UNSAFE.arrayBaseOffset(LongArray::class.java)
-internal val FLOAT_ARRAY_OFFSET = UNSAFE.arrayBaseOffset(FloatArray::class.java)
-internal val DOUBLE_ARRAY_OFFSET = UNSAFE.arrayBaseOffset(DoubleArray::class.java)
-
 private val ADDRESS_OFFSET = UNSAFE.objectFieldOffset(Buffer::class.java.getDeclaredField("address"))
 
 internal val Buffer.address: Long
@@ -32,6 +25,6 @@ internal val Buffer.byteCapacity: Long
         else -> throw IllegalArgumentException("Unsupported buffer type: ${this.javaClass}")
     }
 
-fun memcpy(src: MemoryPointer, dst: MemoryPointer, srcOffset: Long = 0L, dstOffset: Long = 0L, length: Long) {
-    UNSAFE.copyMemory(src.address + srcOffset, dst.address + dstOffset, length)
+fun memcpy(src: Span, dst: Span, length: Long) {
+    UNSAFE.copyMemory(src.address, dst.address, length)
 }

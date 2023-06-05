@@ -7,7 +7,7 @@ object MemoryTracker {
 
     val usedMemory get() = counter.get()
 
-    fun allocate(size: Long): Long {
+    internal fun allocate(size: Long): Long {
         require(size >= 0L) { "Invalid size" }
         if (size == 0L) return 0L
 
@@ -15,7 +15,7 @@ object MemoryTracker {
         return UNSAFE.allocateMemory(size)
     }
 
-    fun reallocate(address: Long, oldSize: Long, newSize: Long): Long {
+    internal fun reallocate(address: Long, oldSize: Long, newSize: Long): Long {
         require(address >= 0L) { "Invalid address" }
         require(oldSize >= 0L) { "Invalid old size" }
         require(newSize >= 0L) { "Invalid new size" }
@@ -36,7 +36,7 @@ object MemoryTracker {
         }
     }
 
-    fun free(address: Long, size: Long) {
+    internal fun free(address: Long, size: Long) {
         require(address >= 0L) { "Invalid address" }
         require(size >= 0L) { "Invalid size" }
 
