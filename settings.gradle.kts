@@ -12,4 +12,4 @@ pluginManagement {
 }
 
 include("core")
-include("struct-api", "struct-ksp")
+include("struct-api", "struct-plugin")
