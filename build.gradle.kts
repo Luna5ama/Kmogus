@@ -24,7 +24,7 @@ subprojects {
     }
 
     base {
-        archivesName.set("${rootProject.name}-${project.name}")
+        archivesName.set("${rootProject.name.toLowerCase()}-${project.name}")
     }
 
     java {
@@ -56,20 +56,11 @@ subprojects {
 
         withType<KotlinCompile> {
             kotlinOptions {
-                freeCompilerArgs += listOf(
+                freeCompilerArgs = listOf(
                     "-Xlambdas=indy",
                     "-Xjvm-default=all",
                     "-Xbackend-threads=0"
                 )
-            }
-        }
-    }
-
-    publishing {
-        publications {
-            create<MavenPublication>(project.name) {
-                artifactId = "${rootProject.name}-${project.name}"
-                from(components["java"])
             }
         }
     }
