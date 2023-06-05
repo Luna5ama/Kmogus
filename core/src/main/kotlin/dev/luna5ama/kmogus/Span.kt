@@ -1,7 +1,7 @@
 package dev.luna5ama.kmogus
 
 @JvmInline
-value class Span(val address: Long) {
+value class Span private constructor(val address: Long) {
     fun setByte(value: Byte) {
         UNSAFE.putByte(address, value)
     }
@@ -135,12 +135,18 @@ value class Span(val address: Long) {
     operator fun set(offset: Long, value: Double) {
         UNSAFE.putDouble(address + offset, value)
     }
+
+    companion object {
+        @JvmStatic
+        fun MemoryPointer.asSpan() = Span(address)
+
+        @JvmStatic
+        fun MemoryPointer.asSpan(offset: Long) = Span(address + offset)
+
+        @JvmStatic
+        fun MemoryArray.asSpan() = Span(address + offset)
+
+        @JvmStatic
+        fun MemoryArray.asSpan(offset: Long) = Span(address + this.offset + offset)
+    }
 }
-
-fun MemoryPointer.asSpan() = Span(address)
-
-fun MemoryPointer.asSpan(offset: Long) = Span(address + offset)
-
-fun MemoryArray.asSpan() = Span(address + offset)
-
-fun MemoryArray.asSpan(offset: Long) = Span(address + this.offset + offset)

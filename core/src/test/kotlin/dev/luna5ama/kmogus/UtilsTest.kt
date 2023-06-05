@@ -1,5 +1,6 @@
 package dev.luna5ama.kmogus
 
+import dev.luna5ama.kmogus.Span.Companion.asSpan
 import org.junit.jupiter.api.Test
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
