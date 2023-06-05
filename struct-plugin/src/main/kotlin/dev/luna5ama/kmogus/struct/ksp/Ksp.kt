@@ -19,8 +19,11 @@ import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterSpec
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
 import dev.luna5ama.kmogus.MemoryArray
@@ -29,6 +32,7 @@ import dev.luna5ama.kmogus.struct.Field
 import dev.luna5ama.kmogus.struct.Padding
 import dev.luna5ama.kmogus.struct.Struct
 import sun.misc.Unsafe
+import kotlin.reflect.KMutableProperty1
 
 class KmogusStructProvider : SymbolProcessorProvider {
     override fun create(environment: SymbolProcessorEnvironment): SymbolProcessor {
@@ -64,6 +68,7 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
         val list = clazz.getAllProperties().toList()
         val fieldTypes = mutableMapOf<String, ClassName>()
         val propertyList = mutableListOf<PropertySpec>()
+        val fieldAnnotations = mutableMapOf<String, Field>()
 
         for (property in list) {
             val name = property.simpleName.asString()
@@ -76,28 +81,25 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
             }
 
             val fieldSize = when (typeName) {
-                "Byte" -> 1
-                "Short" -> 2
-                "Int" -> 4
-                "Long" -> 8
-                "Float" -> 4
-                "Double" -> 8
-                "Char" -> 2
-                "Boolean" -> 1
+                "Byte" -> 1L
+                "Short" -> 2L
+                "Int" -> 4L
+                "Long" -> 8L
+                "Float" -> 4L
+                "Double" -> 8L
+                "Char" -> 2L
+                "Boolean" -> 1L
                 else -> throw Exception("Unsupported type: $typeName")
             }
 
             val pOffset = plusOffset(offset)
+            val annotation = Field(offset, fieldSize)
 
             fieldTypes[name] = type
+            fieldAnnotations[name] = annotation
             propertyList.add(
                 PropertySpec.builder(name, type)
-                    .addAnnotation(
-                        AnnotationSpec.builder(Field::class.java)
-                            .addMember("offset = $offset")
-                            .addMember("size = $fieldSize")
-                            .build()
-                    )
+                    .addAnnotation(AnnotationSpec.get(annotation))
                     .mutable()
                     .getter(
                         FunSpec.getterBuilder()
@@ -119,7 +121,7 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
         val structAnnotation = clazz.getAnnotationsByType(Struct::class).first()
         val sizeAlignment = structAnnotation.sizeAlignment
         val fieldAlignment = structAnnotation.fieldAlignment
-        val size = (offset + sizeAlignment - 1) / sizeAlignment * sizeAlignment
+        val structSize = (offset + sizeAlignment - 1) / sizeAlignment * sizeAlignment
         val selfType = ClassName(packageName, simpleName)
 
         FileSpec.builder(packageName, simpleName)
@@ -130,9 +132,10 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
                     .addConstructor()
                     .addOperatorFunctions(selfType)
                     .addProperties(propertyList)
-                    .addCompanion(selfType, fieldTypes, size)
+                    .addCompanion(selfType, structSize, fieldTypes)
                     .build()
             )
+            .addHelpers(selfType, structSize, fieldAnnotations)
             .indent("    ")
             .build()
             .writeTo(environment.codeGenerator, Dependencies(true))
@@ -213,52 +216,94 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
                 .build()
         )
 
-    private fun TypeSpec.Builder.addCompanion(selfType: ClassName, fieldTypes: Map<String, ClassName>, size: Long) =
-        addType(
-            TypeSpec.companionObjectBuilder()
-                .addProperty(
-                    PropertySpec.builder("size", Long::class, KModifier.CONST)
-                        .initializer("${size}L")
-                        .build()
-                )
-                .addProperty(
-                    PropertySpec.builder("UNSAFE", Unsafe::class, KModifier.PRIVATE)
-                        .addAnnotation(JvmStatic::class)
-                        .initializer(
-                            CodeBlock.builder()
-                                .beginControlFlow("run")
-                                .addStatement("val field = Unsafe::class.java.getDeclaredField(\"theUnsafe\")")
-                                .addStatement("field.isAccessible = true")
-                                .addStatement("field.get(null) as Unsafe")
-                                .endControlFlow()
-                                .build()
-                        )
-                        .build()
-                )
-                .addFunction(
-                    FunSpec.builder("invoke")
-                        .addAnnotation(JvmStatic::class)
-                        .addModifiers(KModifier.OPERATOR)
-                        .addParameter("address", Long::class)
-                        .addParameters(
-                            fieldTypes.map { (name, type) ->
-                                ParameterSpec.builder(name, type).build()
-                            }
-                        )
-                        .returns(selfType)
-                        .addCode(
-                            CodeBlock.builder()
-                                .addStatement("val v = ${selfType.simpleName}(address)")
-                                .apply {
-                                    fieldTypes.forEach { (name, _) ->
-                                        addStatement("v.$name = $name")
-                                    }
+    private fun TypeSpec.Builder.addCompanion(
+        selfType: ClassName,
+        structSize: Long,
+        fieldTypes: Map<String, ClassName>
+    ) = addType(
+        TypeSpec.companionObjectBuilder()
+            .addProperty(
+                PropertySpec.builder("size", Long::class, KModifier.CONST)
+                    .initializer("${structSize}L")
+                    .build()
+            )
+            .addProperty(
+                PropertySpec.builder("UNSAFE", Unsafe::class, KModifier.PRIVATE)
+                    .addAnnotation(JvmStatic::class)
+                    .initializer(
+                        CodeBlock.builder()
+                            .beginControlFlow("run")
+                            .addStatement("val field = Unsafe::class.java.getDeclaredField(\"theUnsafe\")")
+                            .addStatement("field.isAccessible = true")
+                            .addStatement("field.get(null) as Unsafe")
+                            .endControlFlow()
+                            .build()
+                    )
+                    .build()
+            )
+            .addFunction(
+                FunSpec.builder("invoke")
+                    .addAnnotation(JvmStatic::class)
+                    .addModifiers(KModifier.OPERATOR)
+                    .addParameter("address", Long::class)
+                    .addParameters(
+                        fieldTypes.map { (name, type) ->
+                            ParameterSpec.builder(name, type).build()
+                        }
+                    )
+                    .returns(selfType)
+                    .addCode(
+                        CodeBlock.builder()
+                            .addStatement("val v = ${selfType.simpleName}(address)")
+                            .apply {
+                                fieldTypes.forEach { (name, _) ->
+                                    addStatement("v.$name = $name")
                                 }
-                                .add("return v")
-                                .build()
-                        )
-                        .build()
-                )
+                            }
+                            .add("return v")
+                            .build()
+                    )
+                    .build()
+            )
+            .build()
+    )
+
+    private fun FileSpec.Builder.addHelpers(
+        selfType: ClassName,
+        structSize: Long,
+        fieldAnnotations: MutableMap<String, Field>
+    ) =
+        addFunction(
+            FunSpec.builder("sizeof")
+                .addParameter("dummy", ClassName(selfType.packageName, selfType.simpleName, "Companion"))
+                .returns(Long::class)
+                .addStatement("return ${structSize}L")
+                .build()
+        ).addFunction(
+            FunSpec.builder("sizeof")
+                .returns(Long::class)
+                .addParameter("f", KMutableProperty1::class.asClassName().parameterizedBy(selfType, STAR))
+                .beginControlFlow("return when (f)")
+                .apply {
+                    fieldAnnotations.forEach { (name, field) ->
+                        addStatement("${selfType.simpleName}::${name} -> ${field.size}L")
+                    }
+                }
+                .addStatement("else -> throw IllegalArgumentException(\"Unknown field \$f\")")
+                .endControlFlow()
+                .build()
+        ).addFunction(
+            FunSpec.builder("offsetof")
+                .returns(Long::class)
+                .addParameter("f", KMutableProperty1::class.asClassName().parameterizedBy(selfType, STAR))
+                .beginControlFlow("return when (f)")
+                .apply {
+                    fieldAnnotations.forEach { (name, field) ->
+                        addStatement("${selfType.simpleName}::${name} -> ${field.offset}L")
+                    }
+                }
+                .addStatement("else -> throw IllegalArgumentException(\"Unknown field \$f\")")
+                .endControlFlow()
                 .build()
         )
 
