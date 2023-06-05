@@ -18,6 +18,9 @@ class MemoryArray(val pointer: MemoryPointer): MemoryPointer by pointer {
     operator fun minusAssign(offset: Long) {
         this.offset -= offset
     }
-}
 
-fun MemoryPointer.asArray() = MemoryArray(this)
+    companion object {
+        @JvmStatic
+        fun MemoryPointer.asArray() = MemoryArray(this)
+    }
+}

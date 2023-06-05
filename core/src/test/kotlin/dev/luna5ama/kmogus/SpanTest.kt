@@ -1,5 +1,7 @@
 package dev.luna5ama.kmogus
 
+import dev.luna5ama.kmogus.MemoryArray.Companion.asArray
+import dev.luna5ama.kmogus.Span.Companion.asSpan
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
@@ -8,7 +10,6 @@ class SpanTest {
     fun fromPointer() {
         val pointer = MemoryPointer.malloc(420)
 
-        assertEquals(pointer.address, Span(pointer.address).address, "Span address should be equal to pointer address")
         assertEquals(pointer.address, pointer.asSpan().address, "Span address should be equal to pointer address")
         assertEquals(pointer.address, pointer.asSpan(0).address, "Span address should be equal to pointer address")
         assertEquals(
@@ -71,23 +72,24 @@ class SpanTest {
 
     @Test
     fun offsetOperators() {
-        var span = Span(69)
+        val pointer = MemoryPointer.malloc(420)
+        var span = pointer.asSpan()
 
-        assertEquals(61, (span - 8).address, "Span address should be equal to 61")
-        assertEquals(77, (span + 8).address, "Span address should be equal to 77")
+        assertEquals(pointer.address - 8, (span - 8).address, "Span address should be equal to pointer.address - 8")
+        assertEquals(pointer.address + 8, (span + 8).address, "Span address should be equal to pointer.address + 8")
 
         span += 99
-        assertEquals(168, span.address, "Span address should be equal to 168")
+        assertEquals(pointer.address + 99, span.address, "Span address should be equal to pointer.address + 99")
         span -= 114
-        assertEquals(54, span.address, "Span address should be equal to 54")
+        assertEquals(pointer.address - 15, span.address, "Span address should be equal to pointer.address - 15")
 
-        assertEquals(54, span++.address, "Span address should be equal to 55")
-        assertEquals(55, span.address, "Span address should be equal to 55")
-        assertEquals(55, span--.address, "Span address should be equal to 54")
-        assertEquals(54, span.address, "Span address should be equal to 54")
+        assertEquals(pointer.address - 15, span++.address, "Span address should be equal to pointer.address - 15")
+        assertEquals(pointer.address - 14, span.address, "Span address should be equal to pointer.address - 14")
+        assertEquals(pointer.address - 14, span--.address, "Span address should be equal to pointer.address - 14")
+        assertEquals(pointer.address - 15, span.address, "Span address should be equal to pointer.address - 15")
 
-        assertEquals(59, span[5].address, "Span address should be equal to 59")
-        assertEquals(49, span[-5].address, "Span address should be equal to 49")
+        assertEquals(pointer.address - 10, span[5].address, "Span address should be equal to pointer.address - 10")
+        assertEquals(pointer.address - 20, span[-5].address, "Span address should be equal to pointer.address - -20")
     }
 
     @Test

@@ -1,5 +1,7 @@
 package dev.luna5ama.kmogus
 
+import dev.luna5ama.kmogus.MemoryArray.Companion.asArray
+import dev.luna5ama.kmogus.Span.Companion.asSpan
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
@@ -24,7 +26,7 @@ class MemoryArrayTest {
         array.offset = 69
         assertEquals(69L, array.offset, "Expected offset to be 69")
 
-        array.offset(Span(pointer.address + 420))
+        array.offset(pointer.asSpan(420))
         assertEquals(420L, array.offset, "Expected offset to be 420")
 
         array.reset()
