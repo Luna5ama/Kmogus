@@ -25,7 +25,6 @@ import com.squareup.kotlinpoet.ksp.writeTo
 
 class Provider : SymbolProcessorProvider {
     override fun create(environment: SymbolProcessorEnvironment): SymbolProcessor {
-        environment.options
         return Processor(environment)
     }
 }
@@ -114,7 +113,7 @@ class Processor(private val environment: SymbolProcessorEnvironment) : SymbolPro
         val selfType = ClassName(packageName, simpleName)
 
         FileSpec.builder(packageName, simpleName)
-            .addImport("dev.luna5ama.struct4k", "UNSAFE")
+            .addImport("dev.luna5ama.kmogus.struct", "UNSAFE")
             .addType(
                 TypeSpec.valueClassBuilder(simpleName)
                     .addAnnotation(JvmInline::class)
@@ -141,47 +140,41 @@ class Processor(private val environment: SymbolProcessorEnvironment) : SymbolPro
             PropertySpec.builder("pointer", Long::class)
                 .initializer("pointer")
                 .build()
+        ).addFunction(
+            FunSpec.builder("inc")
+                .addModifiers(KModifier.OPERATOR)
+                .addStatement("return ${selfType.simpleName}(pointer + size)")
+                .build()
+        ).addFunction(
+            FunSpec.builder("dec")
+                .addModifiers(KModifier.OPERATOR)
+                .addStatement("return ${selfType.simpleName}(pointer - size)")
+                .build()
+        ).addFunction(
+            FunSpec.builder("get")
+                .addModifiers(KModifier.OPERATOR)
+                .addModifiers()
+                .addParameter("index", Int::class)
+                .addStatement("return ${selfType.simpleName}(pointer + index.toLong() * size)")
+                .build()
+        ).addFunction(
+            FunSpec.builder("plus")
+                .addModifiers(KModifier.OPERATOR)
+                .addParameter("offset", Long::class)
+                .addStatement("return ${selfType.simpleName}(pointer + offset)")
+                .build()
+        ).addFunction(
+            FunSpec.builder("minus")
+                .addModifiers(KModifier.OPERATOR)
+                .addParameter("offset", Long::class)
+                .addStatement("return ${selfType.simpleName}(pointer - offset)")
+                .build()
+        ).addFunction(
+            FunSpec.builder("copyTo")
+                .addParameter("dest", selfType)
+                .addStatement("UNSAFE.copyMemory(pointer, dest.pointer, size)")
+                .build()
         )
-            .addFunction(
-                FunSpec.builder("inc")
-                    .addModifiers(KModifier.OPERATOR)
-                    .addStatement("return ${selfType.simpleName}(pointer + size)")
-                    .build()
-            )
-            .addFunction(
-                FunSpec.builder("dec")
-                    .addModifiers(KModifier.OPERATOR)
-                    .addStatement("return ${selfType.simpleName}(pointer - size)")
-                    .build()
-            )
-            .addFunction(
-                FunSpec.builder("get")
-                    .addModifiers(KModifier.OPERATOR)
-                    .addModifiers()
-                    .addParameter("index", Int::class)
-                    .addStatement("return ${selfType.simpleName}(pointer + index.toLong() * size)")
-                    .build()
-            )
-            .addFunction(
-                FunSpec.builder("plus")
-                    .addModifiers(KModifier.OPERATOR)
-                    .addParameter("offset", Long::class)
-                    .addStatement("return ${selfType.simpleName}(pointer + offset)")
-                    .build()
-            )
-            .addFunction(
-                FunSpec.builder("minus")
-                    .addModifiers(KModifier.OPERATOR)
-                    .addParameter("offset", Long::class)
-                    .addStatement("return ${selfType.simpleName}(pointer - offset)")
-                    .build()
-            )
-            .addFunction(
-                FunSpec.builder("copyTo")
-                    .addParameter("dest", selfType)
-                    .addStatement("UNSAFE.copyMemory(pointer, dest.pointer, size)")
-                    .build()
-            )
 
     private fun TypeSpec.Builder.addCompanion(selfType: ClassName, fieldTypes: Map<String, ClassName>, size: Long) =
         addType(
