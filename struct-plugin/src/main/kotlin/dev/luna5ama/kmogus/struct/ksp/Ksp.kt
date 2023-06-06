@@ -28,6 +28,8 @@ import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
 import dev.luna5ama.kmogus.MemoryArray
 import dev.luna5ama.kmogus.MemoryPointer
+import dev.luna5ama.kmogus.MemoryStack
+import dev.luna5ama.kmogus.Span
 import dev.luna5ama.kmogus.struct.Field
 import dev.luna5ama.kmogus.struct.Padding
 import dev.luna5ama.kmogus.struct.Struct
@@ -135,7 +137,7 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
                     .addCompanion(selfType, structSize, fieldTypes)
                     .build()
             )
-            .addHelpers(selfType, structSize, fieldAnnotations)
+            .addHelpers(selfType, structSize, fieldTypes, fieldAnnotations)
             .indent("    ")
             .build()
             .writeTo(environment.codeGenerator, Dependencies(true))
@@ -154,20 +156,8 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
                 .build()
         ).addFunction(
             FunSpec.constructorBuilder()
-                .addParameter("pointer", MemoryPointer::class)
-                .addParameter("offset", Long::class)
-                .callThisConstructor("pointer.address + offset")
-                .build()
-        ).addFunction(
-            FunSpec.constructorBuilder()
                 .addParameter("array", MemoryArray::class)
                 .callThisConstructor("array.address + array.offset")
-                .build()
-        ).addFunction(
-            FunSpec.constructorBuilder()
-                .addParameter("array", MemoryArray::class)
-                .addParameter("offset", Long::class)
-                .callThisConstructor("array.address + array.offset + offset")
                 .build()
         )
 
@@ -245,7 +235,7 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
                 FunSpec.builder("invoke")
                     .addAnnotation(JvmStatic::class)
                     .addModifiers(KModifier.OPERATOR)
-                    .addParameter("address", Long::class)
+                    .addParameter("pointer", MemoryPointer::class)
                     .addParameters(
                         fieldTypes.map { (name, type) ->
                             ParameterSpec.builder(name, type).build()
@@ -254,7 +244,61 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
                     .returns(selfType)
                     .addCode(
                         CodeBlock.builder()
-                            .addStatement("val v = ${selfType.simpleName}(address)")
+                            .addStatement("val v = ${selfType.simpleName}(pointer.address)")
+                            .apply {
+                                fieldTypes.forEach { (name, _) ->
+                                    addStatement("v.$name = $name")
+                                }
+                            }
+                            .add("return v")
+                            .build()
+                    )
+                    .build()
+            ).addFunction(
+                FunSpec.builder("invoke")
+                    .addAnnotation(JvmStatic::class)
+                    .addModifiers(KModifier.OPERATOR)
+                    .addParameter("array", MemoryArray::class)
+                    .addParameters(
+                        fieldTypes.map { (name, type) ->
+                            ParameterSpec.builder(name, type).build()
+                        }
+                    )
+                    .returns(selfType)
+                    .addCode(
+                        CodeBlock.builder()
+                            .addStatement("val v = ${selfType.simpleName}(array.address + array.offset)")
+                            .apply {
+                                fieldTypes.forEach { (name, _) ->
+                                    addStatement("v.$name = $name")
+                                }
+                            }
+                            .add("return v")
+                            .build()
+                    )
+                    .build()
+            ).addFunction(
+                FunSpec.builder("invoke")
+                    .addAnnotation(JvmStatic::class)
+                    .addModifiers(KModifier.OPERATOR)
+                    .addParameter("span", Span::class)
+                    .returns(selfType)
+                    .addStatement("return ${selfType.simpleName}(span.address)")
+                    .build()
+            ).addFunction(
+                FunSpec.builder("invoke")
+                    .addAnnotation(JvmStatic::class)
+                    .addModifiers(KModifier.OPERATOR)
+                    .addParameter("span", Span::class)
+                    .addParameters(
+                        fieldTypes.map { (name, type) ->
+                            ParameterSpec.builder(name, type).build()
+                        }
+                    )
+                    .returns(selfType)
+                    .addCode(
+                        CodeBlock.builder()
+                            .addStatement("val v = ${selfType.simpleName}(span.address)")
                             .apply {
                                 fieldTypes.forEach { (name, _) ->
                                     addStatement("v.$name = $name")
@@ -271,9 +315,27 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
     private fun FileSpec.Builder.addHelpers(
         selfType: ClassName,
         structSize: Long,
+        fieldTypes: Map<String, ClassName>,
         fieldAnnotations: MutableMap<String, Field>
     ) =
         addFunction(
+            FunSpec.builder(selfType.simpleName)
+                .receiver(MemoryStack::class)
+                .returns(selfType)
+                .addStatement("return ${selfType.simpleName}(calloc($structSize))")
+                .build()
+        ).addFunction(
+            FunSpec.builder(selfType.simpleName)
+                .receiver(MemoryStack::class)
+                .addParameters(
+                    fieldTypes.map { (name, type) ->
+                        ParameterSpec.builder(name, type).build()
+                    }
+                )
+                .returns(selfType)
+                .addStatement("return ${selfType.simpleName}(malloc($structSize), ${fieldTypes.keys.joinToString()})")
+                .build()
+        ).addFunction(
             FunSpec.builder("sizeof")
                 .addParameter("dummy", ClassName(selfType.packageName, selfType.simpleName, "Companion"))
                 .returns(Long::class)
