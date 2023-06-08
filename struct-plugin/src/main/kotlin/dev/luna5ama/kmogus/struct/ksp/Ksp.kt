@@ -72,6 +72,11 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
         val propertyList = mutableListOf<PropertySpec>()
         val fieldAnnotations = mutableMapOf<String, Field>()
 
+        val structAnnotation = clazz.getAnnotationsByType(Struct::class).first()
+        val sizeAlignment = structAnnotation.sizeAlignment
+        val fieldAlignment = structAnnotation.fieldAlignment
+        val selfType = ClassName(packageName, simpleName)
+
         for (property in list) {
             val name = property.simpleName.asString()
             val type = property.type.resolve().toClassName()
@@ -117,14 +122,10 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
                     .build()
             )
 
-            offset += fieldSize
+            offset += (fieldSize + fieldAlignment - 1) / fieldAlignment * fieldAlignment
         }
 
-        val structAnnotation = clazz.getAnnotationsByType(Struct::class).first()
-        val sizeAlignment = structAnnotation.sizeAlignment
-        val fieldAlignment = structAnnotation.fieldAlignment
         val structSize = (offset + sizeAlignment - 1) / sizeAlignment * sizeAlignment
-        val selfType = ClassName(packageName, simpleName)
 
         FileSpec.builder(packageName, simpleName)
             .addAnnotation(
