@@ -1,6 +1,5 @@
 package dev.luna5ama.kmogus
 
-import dev.luna5ama.kmogus.Span.Companion.asSpan
 import org.junit.jupiter.api.Test
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -142,28 +141,28 @@ class UtilsTest {
 
     @Test
     fun testMemcpy() {
-        val a = MemoryPointer.calloc(16)
-        val b = MemoryPointer.calloc(16)
+        val a = PointerContainer.calloc(16)
+        val b = PointerContainer.calloc(16)
 
-        val spanA = a.asSpan()
-        val spanB = b.asSpan()
+        val pa = a.pointer
+        val pb = b.pointer
 
-        spanA[0] = 114514
-        spanA[4] = 1919810
-        spanA[8] = 69420
-        spanA[12] = -1
+        pa[0] = 114514
+        pa[4] = 1919810
+        pa[8] = 69420
+        pa[12] = -1
 
-        memcpy(spanA, spanB, 16)
+        memcpy(pa, pb, 16)
 
-        assertEquals(114514, spanB.getInt(0), "Int at index 0 is not 114514")
-        assertEquals(1919810, spanB.getInt(4), "Int at index 4 is not 1919810")
-        assertEquals(69420, spanB.getInt(8), "Int at index 8 is not 69420")
-        assertEquals(-1, spanB.getInt(12), "Int at index 12 is not -1")
+        assertEquals(114514, pb.getInt(0), "Int at index 0 is not 114514")
+        assertEquals(1919810, pb.getInt(4), "Int at index 4 is not 1919810")
+        assertEquals(69420, pb.getInt(8), "Int at index 8 is not 69420")
+        assertEquals(-1, pb.getInt(12), "Int at index 12 is not -1")
 
-        memcpy(spanB[4], spanA[8], 8)
+        memcpy(pb[4], pa[8], 8)
 
-        assertEquals(1919810, spanA.getInt(8), "Int at index 8 is not 69420")
-        assertEquals(69420, spanA.getInt(12), "Int at index 12 is not 69420")
+        assertEquals(1919810, pa.getInt(8), "Int at index 8 is not 69420")
+        assertEquals(69420, pa.getInt(12), "Int at index 12 is not 69420")
 
         a.free()
         b.free()

@@ -13,10 +13,10 @@ class MemoryCleanerTest {
 
     @Test
     fun testManualClean() {
-        val array1 = Array(32) { MemoryPointer.malloc(1024L * 1024L) }
+        val array1 = Array(32) { PointerContainer.malloc(1024L * 1024L) }
         assert(MemoryTracker.usedMemory == 32L * 1024L * 1024L)
 
-        val array2 = Array(16) { MemoryPointer.malloc(1024L * 1024L) }
+        val array2 = Array(16) { PointerContainer.malloc(1024L * 1024L) }
         assert(MemoryTracker.usedMemory == 48L * 1024L * 1024L)
 
         array1.forEach { it.free() }
@@ -28,10 +28,10 @@ class MemoryCleanerTest {
 
     @Test
     fun testManualCleanWithClose() {
-        val array1 = Array(32) { MemoryPointer.malloc(1024L * 1024L) }
+        val array1 = Array(32) { PointerContainer.malloc(1024L * 1024L) }
         assert(MemoryTracker.usedMemory == 32L * 1024L * 1024L)
 
-        val array2 = Array(16) { MemoryPointer.malloc(1024L * 1024L) }
+        val array2 = Array(16) { PointerContainer.malloc(1024L * 1024L) }
         assert(MemoryTracker.usedMemory == 48L * 1024L * 1024L)
 
         array1.forEach { it.close() }
@@ -43,9 +43,9 @@ class MemoryCleanerTest {
 
     @Test
     fun testAutoClean() {
-        val array1 = Array(32) { MemoryPointer.malloc(1024L * 1024L) }
+        val array1 = Array(32) { PointerContainer.malloc(1024L * 1024L) }
         assert(MemoryTracker.usedMemory == 32 * 1024L * 1024L)
-        val array2 = Array(16) { MemoryPointer.malloc(1024L * 1024L) }
+        val array2 = Array(16) { PointerContainer.malloc(1024L * 1024L) }
         assert(MemoryTracker.usedMemory == 48 * 1024L * 1024L)
 
         Arrays.fill(array1, null)

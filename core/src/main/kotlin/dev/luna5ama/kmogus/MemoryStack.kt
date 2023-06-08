@@ -3,19 +3,19 @@ package dev.luna5ama.kmogus
 import java.util.*
 
 class MemoryStack private constructor(initCapacity: Long) : AutoCloseable {
-    private val base = MemoryPointer.malloc(initCapacity)
+    private val base = PointerContainer.malloc(initCapacity)
     private var baseOffset = 0L
 
-    private val pointerPool = ArrayDeque<Pointer>()
-    private val pointerStack = PointerStack()
+    private val containerPool = ArrayDeque<Container>()
+    private val containerStack = ContainerStack()
     private val counterStack = CounterStack()
 
-    private fun newPointer(): Pointer {
-        return pointerPool.pollLast() ?: Pointer()
+    private fun newContainer(): Container {
+        return containerPool.pollLast() ?: Container()
     }
 
-    private fun freePointer(frame: Pointer) {
-        pointerPool.offerLast(frame)
+    private fun freeContainer(frame: Container) {
+        containerPool.offerLast(frame)
     }
 
     fun push(): MemoryStack {
@@ -24,66 +24,66 @@ class MemoryStack private constructor(initCapacity: Long) : AutoCloseable {
         return this
     }
 
-    private fun malloc0(size: Long): Pointer {
-        val pointer = newPointer()
+    private fun malloc0(size: Long): Container {
+        val container = newContainer()
 
         val offset = baseOffset
         baseOffset += size
         base.ensureCapacity(baseOffset, false)
 
         counterStack.inc()
-        pointer.frameIndex = counterStack.index
-        pointer.stackIndex = pointerStack.push(pointer)
-        pointer.address = base.address + offset
-        pointer.length = size
+        container.frameIndex = counterStack.index
+        container.stackIndex = containerStack.push(container)
+        container.pointer = base.pointer + offset
+        container.length = size
 
-        return pointer
+        return container
     }
 
-    fun malloc(size: Long): MemoryPointer {
+    fun malloc(size: Long): PointerContainer {
         return malloc0(size)
     }
 
-    fun calloc(size: Long): MemoryPointer {
-        val pointer = malloc0(size)
-        UNSAFE.setMemory(pointer.address, size, 0)
-        return pointer
+    fun calloc(size: Long): PointerContainer {
+        val container = malloc0(size)
+        container.pointer.setMemory(size, 0)
+        return container
     }
 
     fun checkEmpty() {
         check(counterStack.index == -1) { "Memory stack is not empty: frameCounter=${counterStack.index}" }
-        check(pointerStack.size == 0) { "Memory stack is not empty: pointerStack.size=${pointerStack.size}" }
+        check(containerStack.size == 0) { "Memory stack is not empty: containerStack.size=${containerStack.size}" }
     }
 
     override fun close() {
         check(counterStack.index >= -1) { "Memory stack is corrupted: frameCounter=${counterStack.index}" }
         check(counterStack.index != -1) { "Memory stack is empty: frameCounter=${counterStack.index}" }
         repeat(counterStack.pop()) {
-            pointerStack.peek().release()
+            containerStack.peek().release()
         }
     }
 
-    private class PointerStack {
+    private class ContainerStack {
         var size = 0; private set
 
-        private var array = arrayOfNulls<Pointer>(16)
+        private var array = arrayOfNulls<Container>(16)
 
-        fun push(pointer: Pointer): Int {
+        fun push(container: Container): Int {
             if (size == array.size) array = array.copyOf(size * 2)
-            array[size] = pointer
+            array[size] = container
             return size++
         }
 
-        fun pop(): Pointer {
+        fun pop(): Container {
             return array[--size]!!
         }
 
-        fun peek(): Pointer {
+        fun peek(): Container {
             return array[size - 1]!!
         }
 
-        operator fun set(index: Int, pointer: Pointer) {
-            array[index] = pointer
+        operator fun set(index: Int, container: Container) {
+            array[index] = container
         }
     }
 
@@ -107,45 +107,51 @@ class MemoryStack private constructor(initCapacity: Long) : AutoCloseable {
         }
     }
 
-    private inner class Pointer : MemoryPointer {
+    private inner class Container : PointerContainer {
         var stackIndex = 0
         var frameIndex = 0
 
-        override var address: Long = 0L
+        override var pointer: Pointer = Pointer.NULL
         override var length: Long = 0L
 
         override fun reallocate(newLength: Long, init: Boolean) {
-            check(frameIndex == pointerStack.size - 1) { "Cannot reallocate pointer from previous stack frame" }
+            check(frameIndex == counterStack.index) { "Cannot reallocate pointer from previous stack frame" }
 
-            val prevAddress = address
+            val prevAddress = pointer
             val prevLength = length
 
             if (newLength == prevLength) return
 
             if (newLength > prevLength) {
-                val otherPointer = malloc0(newLength)
+                if (containerStack.peek() !== this) {
+                    val otherPointer = malloc0(newLength)
 
-                address = otherPointer.address
+                    pointer = otherPointer.pointer
+
+                    otherPointer.pointer = prevAddress
+                    otherPointer.length = prevLength
+
+                    containerStack[stackIndex] = otherPointer
+                    containerStack[otherPointer.stackIndex] = this
+                }
+
                 length = newLength
 
-                otherPointer.address = prevAddress
-                otherPointer.length = prevLength
-
-                pointerStack[stackIndex] = otherPointer
-                pointerStack[otherPointer.stackIndex] = this
-
-                UNSAFE.copyMemory(prevAddress, address, prevLength)
+                memcpy(prevAddress, pointer, prevLength)
                 if (init) {
-                    UNSAFE.setMemory(address + prevLength, newLength - prevLength, 0)
+                    (pointer + prevLength).setMemory(newLength - prevLength, 0)
                 }
             } else {
                 length = newLength
-                val dummy = newPointer()
-                dummy.frameIndex = frameIndex
-                dummy.stackIndex = pointerStack.push(dummy)
-                dummy.address = address + newLength
-                dummy.length = prevLength - newLength
-                counterStack.inc()
+
+                if (containerStack.peek() !== this) {
+                    val dummy = newContainer()
+                    dummy.frameIndex = frameIndex
+                    dummy.stackIndex = containerStack.push(dummy)
+                    dummy.pointer = pointer + newLength
+                    dummy.length = prevLength - newLength
+                    counterStack.inc()
+                }
             }
         }
 
@@ -156,10 +162,10 @@ class MemoryStack private constructor(initCapacity: Long) : AutoCloseable {
         fun release() {
             val stackTop = counterStack.index + 1
             check(frameIndex == stackTop) { "Frame stack is corrupted while releasing top pointers, expected current frame: $frameIndex, actual: $stackTop" }
-            val last = pointerStack.pop()
+            val last = containerStack.pop()
             check(last === this) { "Frame stack is corrupted while releasing top pointers, expected pointer: $this, actual: $last" }
             baseOffset -= length
-            freePointer(this)
+            freeContainer(this)
         }
     }
 

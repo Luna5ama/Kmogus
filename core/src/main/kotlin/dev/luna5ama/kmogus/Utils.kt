@@ -25,6 +25,6 @@ internal val Buffer.byteCapacity: Long
         else -> throw IllegalArgumentException("Unsupported buffer type: ${this.javaClass}")
     }
 
-fun memcpy(src: Span, dst: Span, length: Long) {
+fun memcpy(src: Pointer, dst: Pointer, length: Long) {
     UNSAFE.copyMemory(src.address, dst.address, length)
 }
