@@ -99,6 +99,10 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
                 else -> throw Exception("Unsupported type: $typeName")
             }
 
+            if (fieldAlignment) {
+                offset = (offset + fieldSize - 1) / fieldSize * fieldSize
+            }
+
             val pOffset = plusOffset(offset)
             val annotation = Field(offset, fieldSize)
 
@@ -122,7 +126,7 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
                     .build()
             )
 
-            offset += (fieldSize + fieldAlignment - 1) / fieldAlignment * fieldAlignment
+            offset += fieldSize
         }
 
         val structSize = (offset + sizeAlignment - 1) / sizeAlignment * sizeAlignment
