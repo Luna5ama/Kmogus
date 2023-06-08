@@ -105,6 +105,10 @@ value class Pointer(val address: Long) {
         return UNSAFE.getDouble(address + offset)
     }
 
+    fun copyTo(dest: Pointer, length: Long) {
+        memcpy(this, dest, length)
+    }
+
 
     operator fun plus(offset: Long) = Pointer(address + offset)
 
