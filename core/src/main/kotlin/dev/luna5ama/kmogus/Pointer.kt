@@ -1,7 +1,11 @@
 package dev.luna5ama.kmogus
 
 @JvmInline
-value class Span internal constructor(val address: Long) {
+value class Pointer(val address: Long) {
+    fun setMemory(length: Long, value: Byte) {
+        UNSAFE.setMemory(address, length, value)
+    }
+
     fun setByte(value: Byte) {
         UNSAFE.putByte(address, value)
     }
@@ -102,15 +106,15 @@ value class Span internal constructor(val address: Long) {
     }
 
 
-    operator fun plus(offset: Long) = Span(address + offset)
+    operator fun plus(offset: Long) = Pointer(address + offset)
 
-    operator fun minus(offset: Long) = Span(address - offset)
+    operator fun minus(offset: Long) = Pointer(address - offset)
 
-    operator fun inc() = Span(address + 1)
+    operator fun inc() = Pointer(address + 1)
 
-    operator fun dec() = Span(address - 1)
+    operator fun dec() = Pointer(address - 1)
 
-    operator fun get(offset: Long) = Span(address + offset)
+    operator fun get(offset: Long) = Pointer(address + offset)
 
     operator fun set(offset: Long, value: Byte) {
         UNSAFE.putByte(address + offset, value)
@@ -135,21 +139,12 @@ value class Span internal constructor(val address: Long) {
     operator fun set(offset: Long, value: Double) {
         UNSAFE.putDouble(address + offset, value)
     }
+
+    operator fun compareTo(other: Pointer): Int {
+        return address.compareTo(other.address)
+    }
+
+    companion object {
+        val NULL = Pointer(0L)
+    }
 }
-
-fun MemoryPointer.asSpan() = Span(address)
-
-fun MemoryPointer.asSpan(offset: Long) = Span(address + offset)
-
-operator fun MemoryPointer.plus(offset: Long) = Span(address + offset)
-
-operator fun MemoryPointer.minus(offset: Long) = Span(address - offset)
-
-
-fun MemoryArray.asSpan() = Span(address + offset)
-
-fun MemoryArray.asSpan(offset: Long) = Span(address + this.offset + offset)
-
-operator fun MemoryArray.plus(offset: Long) = Span(address + this.offset + offset)
-
-operator fun MemoryArray.minus(offset: Long) = Span(address + this.offset - offset)

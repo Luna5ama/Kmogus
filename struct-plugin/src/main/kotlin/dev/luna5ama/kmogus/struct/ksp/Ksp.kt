@@ -26,10 +26,10 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
-import dev.luna5ama.kmogus.MemoryArray
-import dev.luna5ama.kmogus.MemoryPointer
 import dev.luna5ama.kmogus.MemoryStack
-import dev.luna5ama.kmogus.Span
+import dev.luna5ama.kmogus.MutablePointerContainer
+import dev.luna5ama.kmogus.Pointer
+import dev.luna5ama.kmogus.PointerContainer
 import dev.luna5ama.kmogus.struct.Field
 import dev.luna5ama.kmogus.struct.Padding
 import dev.luna5ama.kmogus.struct.Struct
@@ -127,6 +127,18 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
         val selfType = ClassName(packageName, simpleName)
 
         FileSpec.builder(packageName, simpleName)
+            .addAnnotation(
+                AnnotationSpec.get(
+                    Suppress(
+                        "RedundantVisibilityModifier",
+                        "unused",
+                        "UNUSED_PARAMETER",
+                        "MemberVisibilityCanBePrivate",
+                        "ReplaceArrayOfWithLiteral",
+                        "SpellCheckingInspection"
+                    )
+                )
+            )
             .addType(
                 TypeSpec.valueClassBuilder(simpleName)
                     .addAnnotation(AnnotationSpec.get(Struct(sizeAlignment, fieldAlignment), true))
@@ -151,13 +163,13 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
                 .build()
         ).addFunction(
             FunSpec.constructorBuilder()
-                .addParameter("pointer", MemoryPointer::class)
-                .callThisConstructor("pointer.address")
+                .addParameter("container", PointerContainer::class)
+                .callThisConstructor("container.pointer.address")
                 .build()
         ).addFunction(
             FunSpec.constructorBuilder()
-                .addParameter("array", MemoryArray::class)
-                .callThisConstructor("array.address + array.offset")
+                .addParameter("container", MutablePointerContainer::class)
+                .callThisConstructor("container.pointer.address")
                 .build()
         )
 
@@ -235,7 +247,61 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
                 FunSpec.builder("invoke")
                     .addAnnotation(JvmStatic::class)
                     .addModifiers(KModifier.OPERATOR)
-                    .addParameter("pointer", MemoryPointer::class)
+                    .addParameter("container", PointerContainer::class)
+                    .addParameters(
+                        fieldTypes.map { (name, type) ->
+                            ParameterSpec.builder(name, type).build()
+                        }
+                    )
+                    .returns(selfType)
+                    .addCode(
+                        CodeBlock.builder()
+                            .addStatement("val v = ${selfType.simpleName}(container)")
+                            .apply {
+                                fieldTypes.forEach { (name, _) ->
+                                    addStatement("v.$name = $name")
+                                }
+                            }
+                            .add("return v")
+                            .build()
+                    )
+                    .build()
+            ).addFunction(
+                FunSpec.builder("invoke")
+                    .addAnnotation(JvmStatic::class)
+                    .addModifiers(KModifier.OPERATOR)
+                    .addParameter("container", MutablePointerContainer::class)
+                    .addParameters(
+                        fieldTypes.map { (name, type) ->
+                            ParameterSpec.builder(name, type).build()
+                        }
+                    )
+                    .returns(selfType)
+                    .addCode(
+                        CodeBlock.builder()
+                            .addStatement("val v = ${selfType.simpleName}(container)")
+                            .apply {
+                                fieldTypes.forEach { (name, _) ->
+                                    addStatement("v.$name = $name")
+                                }
+                            }
+                            .add("return v")
+                            .build()
+                    )
+                    .build()
+            ).addFunction(
+                FunSpec.builder("invoke")
+                    .addAnnotation(JvmStatic::class)
+                    .addModifiers(KModifier.OPERATOR)
+                    .addParameter("pointer", Pointer::class)
+                    .returns(selfType)
+                    .addStatement("return ${selfType.simpleName}(pointer.address)")
+                    .build()
+            ).addFunction(
+                FunSpec.builder("invoke")
+                    .addAnnotation(JvmStatic::class)
+                    .addModifiers(KModifier.OPERATOR)
+                    .addParameter("pointer", Pointer::class)
                     .addParameters(
                         fieldTypes.map { (name, type) ->
                             ParameterSpec.builder(name, type).build()
@@ -245,60 +311,6 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
                     .addCode(
                         CodeBlock.builder()
                             .addStatement("val v = ${selfType.simpleName}(pointer.address)")
-                            .apply {
-                                fieldTypes.forEach { (name, _) ->
-                                    addStatement("v.$name = $name")
-                                }
-                            }
-                            .add("return v")
-                            .build()
-                    )
-                    .build()
-            ).addFunction(
-                FunSpec.builder("invoke")
-                    .addAnnotation(JvmStatic::class)
-                    .addModifiers(KModifier.OPERATOR)
-                    .addParameter("array", MemoryArray::class)
-                    .addParameters(
-                        fieldTypes.map { (name, type) ->
-                            ParameterSpec.builder(name, type).build()
-                        }
-                    )
-                    .returns(selfType)
-                    .addCode(
-                        CodeBlock.builder()
-                            .addStatement("val v = ${selfType.simpleName}(array.address + array.offset)")
-                            .apply {
-                                fieldTypes.forEach { (name, _) ->
-                                    addStatement("v.$name = $name")
-                                }
-                            }
-                            .add("return v")
-                            .build()
-                    )
-                    .build()
-            ).addFunction(
-                FunSpec.builder("invoke")
-                    .addAnnotation(JvmStatic::class)
-                    .addModifiers(KModifier.OPERATOR)
-                    .addParameter("span", Span::class)
-                    .returns(selfType)
-                    .addStatement("return ${selfType.simpleName}(span.address)")
-                    .build()
-            ).addFunction(
-                FunSpec.builder("invoke")
-                    .addAnnotation(JvmStatic::class)
-                    .addModifiers(KModifier.OPERATOR)
-                    .addParameter("span", Span::class)
-                    .addParameters(
-                        fieldTypes.map { (name, type) ->
-                            ParameterSpec.builder(name, type).build()
-                        }
-                    )
-                    .returns(selfType)
-                    .addCode(
-                        CodeBlock.builder()
-                            .addStatement("val v = ${selfType.simpleName}(span.address)")
                             .apply {
                                 fieldTypes.forEach { (name, _) ->
                                     addStatement("v.$name = $name")

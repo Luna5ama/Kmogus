@@ -7,43 +7,43 @@ object MemoryTracker {
 
     val usedMemory get() = counter.get()
 
-    internal fun allocate(size: Long): Long {
+    internal fun allocate(size: Long): Pointer {
         require(size >= 0L) { "Invalid size" }
-        if (size == 0L) return 0L
+        if (size == 0L) return Pointer.NULL
 
         counter.addAndGet(size)
-        return UNSAFE.allocateMemory(size)
+        return Pointer(UNSAFE.allocateMemory(size))
     }
 
-    internal fun reallocate(address: Long, oldSize: Long, newSize: Long): Long {
-        require(address >= 0L) { "Invalid address" }
+    internal fun reallocate(pointer: Pointer, oldSize: Long, newSize: Long): Pointer {
+        require(pointer.address >= 0L) { "Invalid address" }
         require(oldSize >= 0L) { "Invalid old size" }
         require(newSize >= 0L) { "Invalid new size" }
 
         return when {
             newSize == 0L -> {
-                free(address, oldSize)
-                0L
+                free(pointer, oldSize)
+                Pointer.NULL
             }
-            address == 0L -> {
-                UNSAFE.allocateMemory(newSize)
+            pointer.address == 0L -> {
+                Pointer(UNSAFE.allocateMemory(newSize))
             }
             else -> {
                 require(oldSize != 0L) { "Invalid old size" }
                 counter.addAndGet(newSize - oldSize)
-                UNSAFE.reallocateMemory(address, newSize)
+                Pointer(UNSAFE.reallocateMemory(pointer.address, newSize))
             }
         }
     }
 
-    internal fun free(address: Long, size: Long) {
-        require(address >= 0L) { "Invalid address" }
+    internal fun free(pointer: Pointer, size: Long) {
+        require(pointer.address >= 0L) { "Invalid address" }
         require(size >= 0L) { "Invalid size" }
 
-        if (address == 0L) return
+        if (pointer.address == 0L) return
         require(size != 0L) { "Invalid size" }
 
         counter.addAndGet(-size)
-        UNSAFE.freeMemory(address)
+        UNSAFE.freeMemory(pointer.address)
     }
 }
