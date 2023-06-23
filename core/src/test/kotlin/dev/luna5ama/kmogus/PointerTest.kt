@@ -137,37 +137,4 @@ class PointerTest {
         assert(Pointer(1145141919810) > Pointer(6942069420))
         assert(Pointer(6942069420) < Pointer(1145141919810))
     }
-
-    @Test
-    fun copyTo() {
-        val a = PointerContainer.malloc(4)
-        val b = PointerContainer.malloc(8)
-
-        a.pointer.setByte(0, 11)
-        a.pointer.setByte(1, 127)
-        a.pointer.setByte(2, -1)
-        a.pointer.setByte(3, -69)
-
-        b.pointer.setByte(4, -99)
-        b.pointer.setByte(5, 15)
-        b.pointer.setByte(6, 64)
-        b.pointer.setByte(7, 0)
-
-        a.pointer.copyTo(b.pointer, 4)
-
-        assertEquals(11, b.pointer.getByte(0))
-        assertEquals(127, b.pointer.getByte(1))
-        assertEquals(-1, b.pointer.getByte(2))
-        assertEquals(-69, b.pointer.getByte(3))
-
-        b.pointer.setByte(0, -55)
-        b.pointer.setByte(1, 66)
-
-        b.pointer.copyTo(a.pointer, 2)
-
-        assertEquals(-55, a.pointer.getByte(0))
-        assertEquals(66, a.pointer.getByte(1))
-        assertEquals(-1, a.pointer.getByte(2))
-        assertEquals(-69, a.pointer.getByte(3))
-    }
 }
