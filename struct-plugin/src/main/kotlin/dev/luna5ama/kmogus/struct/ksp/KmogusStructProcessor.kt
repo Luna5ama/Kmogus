@@ -25,9 +25,9 @@ import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
 import dev.luna5ama.kmogus.MemoryStack
-import dev.luna5ama.kmogus.MutablePointerContainer
-import dev.luna5ama.kmogus.Pointer
-import dev.luna5ama.kmogus.PointerContainer
+import dev.luna5ama.kmogus.MutableArr
+import dev.luna5ama.kmogus.Ptr
+import dev.luna5ama.kmogus.Arr
 import dev.luna5ama.kmogus.struct.Field
 import dev.luna5ama.kmogus.struct.Padding
 import dev.luna5ama.kmogus.struct.Struct
@@ -138,13 +138,13 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
                     .build()
             ).addFunction(
                 FunSpec.constructorBuilder()
-                    .addParameter("container", PointerContainer::class)
-                    .callThisConstructor("container.pointer.address")
+                    .addParameter("container", Arr::class)
+                    .callThisConstructor("container.ptr.address")
                     .build()
             ).addFunction(
                 FunSpec.constructorBuilder()
-                    .addParameter("container", MutablePointerContainer::class)
-                    .callThisConstructor("container.pointer.address")
+                    .addParameter("container", MutableArr::class)
+                    .callThisConstructor("container.ptr.address")
                     .build()
             )
 
@@ -154,8 +154,8 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
                 .build()
         ).addFunction(
             FunSpec.builder("asPointer")
-                .returns(Pointer::class)
-                .addStatement("return Pointer(address)")
+                .returns(Ptr::class)
+                .addStatement("return Ptr(address)")
                 .build()
         )
 
@@ -275,7 +275,7 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
                     FunSpec.builder("invoke")
                         .addAnnotation(JvmStatic::class)
                         .addModifiers(KModifier.OPERATOR)
-                        .addParameter("container", PointerContainer::class)
+                        .addParameter("container", Arr::class)
                         .addFieldAsParameters()
                         .returns(struct.type)
                         .addCode(
@@ -294,7 +294,7 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
                     FunSpec.builder("invoke")
                         .addAnnotation(JvmStatic::class)
                         .addModifiers(KModifier.OPERATOR)
-                        .addParameter("container", MutablePointerContainer::class)
+                        .addParameter("container", MutableArr::class)
                         .addParameters(
                             struct.fields.map {
                                 ParameterSpec.builder(it.name, it.type).build()
@@ -313,20 +313,20 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
                     FunSpec.builder("invoke")
                         .addAnnotation(JvmStatic::class)
                         .addModifiers(KModifier.OPERATOR)
-                        .addParameter("pointer", Pointer::class)
+                        .addParameter("ptr", Ptr::class)
                         .returns(struct.type)
-                        .addStatement("return ${struct.name}(pointer.address)")
+                        .addStatement("return ${struct.name}(ptr.address)")
                         .build()
                 ).addFunction(
                     FunSpec.builder("invoke")
                         .addAnnotation(JvmStatic::class)
                         .addModifiers(KModifier.OPERATOR)
-                        .addParameter("pointer", Pointer::class)
+                        .addParameter("ptr", Ptr::class)
                         .addFieldAsParameters()
                         .returns(struct.type)
                         .addCode(
                             CodeBlock.builder()
-                                .addStatement("val v = ${struct.name}(pointer.address)")
+                                .addStatement("val v = ${struct.name}(ptr.address)")
                                 .addFieldInitializers()
                                 .add("return v")
                                 .build()

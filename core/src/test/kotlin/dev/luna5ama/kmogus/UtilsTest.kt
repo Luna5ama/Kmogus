@@ -12,7 +12,7 @@ class UtilsTest {
         val buffer = ByteBuffer.allocateDirect(4).order(ByteOrder.nativeOrder())
         val address = buffer.address
 
-        assertNotEquals(0L, address, "Expected non-null pointer")
+        assertNotEquals(0L, address, "Expected non-null ptr")
 
         buffer.put(69)
         buffer.put(-1)
@@ -30,7 +30,7 @@ class UtilsTest {
         val buffer = ByteBuffer.allocateDirect(4 * 2).order(ByteOrder.nativeOrder()).asShortBuffer()
         val address = buffer.address
 
-        assertNotEquals(0L, address, "Expected non-null pointer")
+        assertNotEquals(0L, address, "Expected non-null ptr")
 
         buffer.put(420)
         buffer.put(-6969)
@@ -48,7 +48,7 @@ class UtilsTest {
         val buffer = ByteBuffer.allocateDirect(4 * 4).order(ByteOrder.nativeOrder()).asIntBuffer()
         val address = buffer.address
 
-        assertNotEquals(0L, address, "Expected non-null pointer")
+        assertNotEquals(0L, address, "Expected non-null ptr")
 
         buffer.put(69420)
         buffer.put(-6969)
@@ -66,7 +66,7 @@ class UtilsTest {
         val buffer = ByteBuffer.allocateDirect(4 * 8).order(ByteOrder.nativeOrder()).asLongBuffer()
         val address = buffer.address
 
-        assertNotEquals(0L, address, "Expected non-null pointer")
+        assertNotEquals(0L, address, "Expected non-null ptr")
 
         buffer.put(1145141919810)
         buffer.put(-6969)
@@ -84,7 +84,7 @@ class UtilsTest {
         val buffer = ByteBuffer.allocateDirect(4 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
         val address = buffer.address
 
-        assertNotEquals(0L, address, "Expected non-null pointer")
+        assertNotEquals(0L, address, "Expected non-null ptr")
 
         buffer.put(Float.MIN_VALUE)
         buffer.put(Float.MAX_VALUE)
@@ -102,7 +102,7 @@ class UtilsTest {
         val buffer = ByteBuffer.allocateDirect(4 * 8).order(ByteOrder.nativeOrder()).asDoubleBuffer()
         val address = buffer.address
 
-        assertNotEquals(0L, address, "Expected non-null pointer")
+        assertNotEquals(0L, address, "Expected non-null ptr")
 
         buffer.put(Double.MIN_VALUE)
         buffer.put(Double.MAX_VALUE)

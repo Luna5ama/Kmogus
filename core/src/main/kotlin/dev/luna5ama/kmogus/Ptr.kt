@@ -1,7 +1,7 @@
 package dev.luna5ama.kmogus
 
 @JvmInline
-value class Pointer(val address: Long) {
+value class Ptr(val address: Long) {
     fun setMemory(length: Long, value: Byte) {
         UNSAFE.setMemory(address, length, value)
     }
@@ -106,15 +106,15 @@ value class Pointer(val address: Long) {
     }
 
 
-    operator fun plus(offset: Long) = Pointer(address + offset)
+    operator fun plus(offset: Long) = Ptr(address + offset)
 
-    operator fun minus(offset: Long) = Pointer(address - offset)
+    operator fun minus(offset: Long) = Ptr(address - offset)
 
-    operator fun inc() = Pointer(address + 1)
+    operator fun inc() = Ptr(address + 1)
 
-    operator fun dec() = Pointer(address - 1)
+    operator fun dec() = Ptr(address - 1)
 
-    operator fun get(offset: Long) = Pointer(address + offset)
+    operator fun get(offset: Long) = Ptr(address + offset)
 
     operator fun set(offset: Long, value: Byte) {
         UNSAFE.putByte(address + offset, value)
@@ -140,11 +140,11 @@ value class Pointer(val address: Long) {
         UNSAFE.putDouble(address + offset, value)
     }
 
-    operator fun compareTo(other: Pointer): Int {
+    operator fun compareTo(other: Ptr): Int {
         return address.compareTo(other.address)
     }
 
     companion object {
-        val NULL = Pointer(0L)
+        val NULL = Ptr(0L)
     }
 }

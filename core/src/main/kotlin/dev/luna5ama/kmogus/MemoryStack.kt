@@ -3,7 +3,7 @@ package dev.luna5ama.kmogus
 import java.util.*
 
 class MemoryStack private constructor(initCapacity: Long) : AutoCloseable {
-    private val base = PointerContainer.malloc(initCapacity)
+    private val base = Arr.malloc(initCapacity)
     private var baseOffset = 0L
 
     private val containerPool = ArrayDeque<Container>()
@@ -34,19 +34,19 @@ class MemoryStack private constructor(initCapacity: Long) : AutoCloseable {
         counterStack.inc()
         container.frameIndex = counterStack.index
         container.stackIndex = containerStack.push(container)
-        container.pointer = base.pointer + offset
+        container.ptr = base.ptr + offset
         container.length = size
 
         return container
     }
 
-    fun malloc(size: Long): PointerContainer {
+    fun malloc(size: Long): Arr {
         return malloc0(size)
     }
 
-    fun calloc(size: Long): PointerContainer {
+    fun calloc(size: Long): Arr {
         val container = malloc0(size)
-        container.pointer.setMemory(size, 0)
+        container.ptr.setMemory(size, 0)
         return container
     }
 
@@ -107,17 +107,17 @@ class MemoryStack private constructor(initCapacity: Long) : AutoCloseable {
         }
     }
 
-    private inner class Container : PointerContainer {
+    private inner class Container : Arr {
         var stackIndex = 0
         var frameIndex = 0
 
-        override var pointer: Pointer = Pointer.NULL
+        override var ptr: Ptr = Ptr.NULL
         override var length: Long = 0L
 
         override fun reallocate(newLength: Long, init: Boolean) {
-            check(frameIndex == counterStack.index) { "Cannot reallocate pointer from previous stack frame" }
+            check(frameIndex == counterStack.index) { "Cannot reallocate ptr from previous stack frame" }
 
-            val prevAddress = pointer
+            val prevAddress = ptr
             val prevLength = length
 
             if (newLength == prevLength) return
@@ -126,9 +126,9 @@ class MemoryStack private constructor(initCapacity: Long) : AutoCloseable {
                 if (containerStack.peek() !== this) {
                     val otherPointer = malloc0(newLength)
 
-                    pointer = otherPointer.pointer
+                    ptr = otherPointer.ptr
 
-                    otherPointer.pointer = prevAddress
+                    otherPointer.ptr = prevAddress
                     otherPointer.length = prevLength
 
                     containerStack[stackIndex] = otherPointer
@@ -137,9 +137,9 @@ class MemoryStack private constructor(initCapacity: Long) : AutoCloseable {
 
                 length = newLength
 
-                memcpy(prevAddress, pointer, prevLength)
+                memcpy(prevAddress, ptr, prevLength)
                 if (init) {
-                    (pointer + prevLength).setMemory(newLength - prevLength, 0)
+                    (ptr + prevLength).setMemory(newLength - prevLength, 0)
                 }
             } else {
                 length = newLength
@@ -148,7 +148,7 @@ class MemoryStack private constructor(initCapacity: Long) : AutoCloseable {
                     val dummy = newContainer()
                     dummy.frameIndex = frameIndex
                     dummy.stackIndex = containerStack.push(dummy)
-                    dummy.pointer = pointer + newLength
+                    dummy.ptr = ptr + newLength
                     dummy.length = prevLength - newLength
                     counterStack.inc()
                 }
@@ -163,7 +163,7 @@ class MemoryStack private constructor(initCapacity: Long) : AutoCloseable {
             val stackTop = counterStack.index + 1
             check(frameIndex == stackTop) { "Frame stack is corrupted while releasing top pointers, expected current frame: $frameIndex, actual: $stackTop" }
             val last = containerStack.pop()
-            check(last === this) { "Frame stack is corrupted while releasing top pointers, expected pointer: $this, actual: $last" }
+            check(last === this) { "Frame stack is corrupted while releasing top pointers, expected ptr: $this, actual: $last" }
             baseOffset -= length
             freeContainer(this)
         }
