@@ -267,8 +267,19 @@ class PointerContainerTest {
         buffer.put(6, 3)
         buffer.put(7, 4)
 
-        val wrapped = PointerContainer.wrap(buffer)
+        var wrapped = PointerContainer.wrap(buffer)
         assertEquals(buffer.address, wrapped.pointer.address, "Expected address: 0x%016X, actual: 0x%016X".format(buffer.address, wrapped.pointer.address))
+        wrapped = PointerContainer.wrap(buffer.asShortBuffer())
+        assertEquals(buffer.address, wrapped.pointer.address, "Expected address: 0x%016X, actual: 0x%016X".format(buffer.address, wrapped.pointer.address))
+        wrapped = PointerContainer.wrap(buffer.asIntBuffer())
+        assertEquals(buffer.address, wrapped.pointer.address, "Expected address: 0x%016X, actual: 0x%016X".format(buffer.address, wrapped.pointer.address))
+        wrapped = PointerContainer.wrap(buffer.asLongBuffer())
+        assertEquals(buffer.address, wrapped.pointer.address, "Expected address: 0x%016X, actual: 0x%016X".format(buffer.address, wrapped.pointer.address))
+        wrapped = PointerContainer.wrap(buffer.asFloatBuffer())
+        assertEquals(buffer.address, wrapped.pointer.address, "Expected address: 0x%016X, actual: 0x%016X".format(buffer.address, wrapped.pointer.address))
+        wrapped = PointerContainer.wrap(buffer.asDoubleBuffer())
+        assertEquals(buffer.address, wrapped.pointer.address, "Expected address: 0x%016X, actual: 0x%016X".format(buffer.address, wrapped.pointer.address))
+
         assertEquals(8L, wrapped.length, "Expected length 8")
 
         UNSAFE.putByte(wrapped.pointer.address, 69)
