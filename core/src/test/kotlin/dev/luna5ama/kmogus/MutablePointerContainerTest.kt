@@ -6,11 +6,11 @@ import kotlin.test.assertEquals
 class MutablePointerContainerTest {
     @Test
     fun asArray() {
-        val pointer = PointerContainer.malloc(4)
+        val pointer = Arr.malloc(4)
 
         val array = pointer.asMutable()
         assertEquals(0L, array.offset, "Expected initial offset to be 0")
-        assertEquals(pointer.pointer, array.pointer, "Expected address to be the same")
+        assertEquals(pointer.ptr, array.ptr, "Expected address to be the same")
         assertEquals(pointer.length, array.length, "Expected length to be the same")
 
         pointer.free()
@@ -18,13 +18,13 @@ class MutablePointerContainerTest {
 
     @Test
     fun offset() {
-        val pointer = PointerContainer.malloc(420)
+        val pointer = Arr.malloc(420)
         val array = pointer.asMutable()
 
         array.offset = 69
         assertEquals(69L, array.offset, "Expected offset to be 69")
 
-        array.offset(pointer.pointer + 420)
+        array.offset(pointer.ptr + 420)
         assertEquals(420L, array.offset, "Expected offset to be 420")
 
         array.reset()
@@ -47,7 +47,7 @@ class MutablePointerContainerTest {
 
     @Test
     fun offsetPointer() {
-        val container = PointerContainer.malloc(8).asMutable()
+        val container = Arr.malloc(8).asMutable()
 
         assertEquals(container.basePointer.address + 4, (container + 4).address, "Expected address to be address + 4")
         assertEquals(container.basePointer.address - 4, (container - 4).address, "Expected address to be address - 4")
@@ -60,7 +60,7 @@ class MutablePointerContainerTest {
 
     @Test
     fun offsetPointerOnOffset() {
-        val container = PointerContainer.malloc(8).asMutable()
+        val container = Arr.malloc(8).asMutable()
 
         container.offset += 69
 

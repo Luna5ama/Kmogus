@@ -12,7 +12,7 @@ class MemoryTrackerTest {
         val manual = MemoryTracker.allocate(420)
         assertEquals(420, MemoryTracker.usedMemory)
 
-        val pointer = PointerContainer.malloc(69)
+        val pointer = Arr.malloc(69)
         assertEquals(489, MemoryTracker.usedMemory)
 
         MemoryTracker.free(manual, 420)

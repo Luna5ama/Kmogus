@@ -3,8 +3,8 @@ package dev.luna5ama.kmogus
 import java.nio.Buffer
 import kotlin.math.max
 
-interface PointerContainer : AutoCloseable {
-    val pointer: Pointer
+interface Arr : AutoCloseable {
+    val ptr: Ptr
     val length: Long
 
     fun reallocate(newLength: Long, init: Boolean)
@@ -15,7 +15,7 @@ interface PointerContainer : AutoCloseable {
     }
 
     companion object {
-        fun wrap(buffer: Buffer, offset: Long): PointerContainer {
+        fun wrap(buffer: Buffer, offset: Long): Arr {
             require(buffer.isDirect) { "ByteBuffer must be direct" }
             require(offset >= 0L) { "Invalid offset" }
             require(offset <= buffer.byteCapacity) { "Offset is greater than buffer capacity" }
@@ -23,59 +23,59 @@ interface PointerContainer : AutoCloseable {
             return wrap(buffer.address + offset, buffer.byteCapacity - offset)
         }
 
-        fun wrap(buffer: Buffer): PointerContainer {
+        fun wrap(buffer: Buffer): Arr {
             require(buffer.isDirect) { "ByteBuffer must be direct" }
 
             return wrap(buffer.address, buffer.byteCapacity)
         }
 
-        fun wrap(address: Long, length: Long): PointerContainer {
+        fun wrap(address: Long, length: Long): Arr {
             require(address >= 0L) { "Invalid address" }
             require(length >= 0L) { "Invalid length" }
-            val pointer = Pointer(address)
-            if (length == 0L) return PointerContainerImpl(pointer, 0L)
+            val ptr = Ptr(address)
+            if (length == 0L) return ArrImpl(ptr, 0L)
 
-            return PointerContainerWrapped(pointer, length)
+            return ArrWrapped(ptr, length)
         }
 
-        fun malloc(length: Long): PointerContainer {
+        fun malloc(length: Long): Arr {
             require(length >= 0L) { "Invalid length" }
-            if (length == 0L) return PointerContainerImpl(Pointer.NULL, 0L)
+            if (length == 0L) return ArrImpl(Ptr.NULL, 0L)
 
-            val pointer = PointerContainerImpl(MemoryTracker.allocate(length), length)
+            val pointer = ArrImpl(MemoryTracker.allocate(length), length)
             MemoryCleaner.register(pointer)
 
             return pointer
         }
 
-        fun calloc(length: Long): PointerContainer {
+        fun calloc(length: Long): Arr {
             val container = malloc(length)
-            container.pointer.setMemory(length, 0)
+            container.ptr.setMemory(length, 0)
             return container
         }
     }
 }
 
-internal class PointerContainerWrapped(override val pointer: Pointer, override val length: Long) : PointerContainer {
+internal class ArrWrapped(override val ptr: Ptr, override val length: Long) : Arr {
     override fun reallocate(newLength: Long, init: Boolean) {
-        throw UnsupportedOperationException("Cannot reallocate wrapped pointer")
+        throw UnsupportedOperationException("Cannot reallocate wrapped ptr")
     }
 
     override fun free() {
-        throw UnsupportedOperationException("Cannot free wrapped pointer")
+        throw UnsupportedOperationException("Cannot free wrapped ptr")
     }
 }
 
-internal class ContainerDelegated(@Volatile var pointer: Pointer, @Volatile var length: Long) {
+internal class ContainerDelegated(@Volatile var ptr: Ptr, @Volatile var length: Long) {
     fun reallocate(newLength: Long, init: Boolean) {
         require(newLength >= 0) { "Length must be positive or zero" }
 
         synchronized(this) {
             if (newLength == length) return
 
-            pointer = MemoryTracker.reallocate(pointer, length, newLength)
+            ptr = MemoryTracker.reallocate(ptr, length, newLength)
             if (init && newLength > length) {
-                UNSAFE.setMemory(pointer.address + length, newLength - length, 0)
+                UNSAFE.setMemory(ptr.address + length, newLength - length, 0)
             }
             length = newLength
         }
@@ -83,17 +83,17 @@ internal class ContainerDelegated(@Volatile var pointer: Pointer, @Volatile var 
 
     fun free() {
         synchronized(this) {
-            MemoryTracker.free(pointer, length)
-            pointer = Pointer.NULL
+            MemoryTracker.free(ptr, length)
+            ptr = Ptr.NULL
             length = 0
         }
     }
 }
 
-internal class PointerContainerImpl(address: Pointer, length: Long) : PointerContainer {
+internal class ArrImpl(address: Ptr, length: Long) : Arr {
     val delegated = ContainerDelegated(address, length)
 
-    override val pointer: Pointer get() = delegated.pointer
+    override val ptr: Ptr get() = delegated.ptr
     override val length: Long get() = delegated.length
 
     override fun reallocate(newLength: Long, init: Boolean) {
@@ -106,10 +106,10 @@ internal class PointerContainerImpl(address: Pointer, length: Long) : PointerCon
 }
 
 
-fun PointerContainer.ensureCapacity(capacity: Long, init: Boolean) {
+fun Arr.ensureCapacity(capacity: Long, init: Boolean) {
     if (capacity > length) reallocate(max(capacity, length * 2), init)
 }
 
-operator fun PointerContainer.plus(offset: Long) = pointer + offset
+operator fun Arr.plus(offset: Long) = ptr + offset
 
-operator fun PointerContainer.minus(offset: Long) = pointer - offset
+operator fun Arr.minus(offset: Long) = ptr - offset

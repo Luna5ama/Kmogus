@@ -7,43 +7,43 @@ object MemoryTracker {
 
     val usedMemory get() = counter.get()
 
-    internal fun allocate(size: Long): Pointer {
+    internal fun allocate(size: Long): Ptr {
         require(size >= 0L) { "Invalid size" }
-        if (size == 0L) return Pointer.NULL
+        if (size == 0L) return Ptr.NULL
 
         counter.addAndGet(size)
-        return Pointer(UNSAFE.allocateMemory(size))
+        return Ptr(UNSAFE.allocateMemory(size))
     }
 
-    internal fun reallocate(pointer: Pointer, oldSize: Long, newSize: Long): Pointer {
-        require(pointer.address >= 0L) { "Invalid address" }
+    internal fun reallocate(ptr: Ptr, oldSize: Long, newSize: Long): Ptr {
+        require(ptr.address >= 0L) { "Invalid address" }
         require(oldSize >= 0L) { "Invalid old size" }
         require(newSize >= 0L) { "Invalid new size" }
 
         return when {
             newSize == 0L -> {
-                free(pointer, oldSize)
-                Pointer.NULL
+                free(ptr, oldSize)
+                Ptr.NULL
             }
-            pointer.address == 0L -> {
-                Pointer(UNSAFE.allocateMemory(newSize))
+            ptr.address == 0L -> {
+                Ptr(UNSAFE.allocateMemory(newSize))
             }
             else -> {
                 require(oldSize != 0L) { "Invalid old size" }
                 counter.addAndGet(newSize - oldSize)
-                Pointer(UNSAFE.reallocateMemory(pointer.address, newSize))
+                Ptr(UNSAFE.reallocateMemory(ptr.address, newSize))
             }
         }
     }
 
-    internal fun free(pointer: Pointer, size: Long) {
-        require(pointer.address >= 0L) { "Invalid address" }
+    internal fun free(ptr: Ptr, size: Long) {
+        require(ptr.address >= 0L) { "Invalid address" }
         require(size >= 0L) { "Invalid size" }
 
-        if (pointer.address == 0L) return
+        if (ptr.address == 0L) return
         require(size != 0L) { "Invalid size" }
 
         counter.addAndGet(-size)
-        UNSAFE.freeMemory(pointer.address)
+        UNSAFE.freeMemory(ptr.address)
     }
 }
