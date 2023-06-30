@@ -35,9 +35,9 @@ class MemoryStackTest {
             assertEquals(b.ptr.address + 1, c.ptr.address, "c.address != b.address + 1")
             assertEquals(c.ptr.address + 15, d.ptr.address, "d.address != c.address + 15")
 
-            assertEquals(4, a.length, "a.length != 4")
-            assertEquals(1, b.length, "b.length != 1")
-            assertEquals(15, c.length, "c.length != 15")
+            assertEquals(4, a.len, "a.length != 4")
+            assertEquals(1, b.len, "b.length != 1")
+            assertEquals(15, c.len, "c.length != 15")
         }
     }
 
@@ -115,9 +115,9 @@ class MemoryStackTest {
             UNSAFE.putByte(container.ptr.address + 2, -1)
             UNSAFE.putByte(container.ptr.address + 3, -69)
 
-            container.reallocate(8, false)
+            container.realloc(8, false)
             assertEquals(prevAddress, container.ptr.address, "Expected realloc in place, but got a new address")
-            assertEquals(8, container.length, "Expected new length to be 8")
+            assertEquals(8, container.len, "Expected new length to be 8")
             assertEquals(69, UNSAFE.getByte(container.ptr.address), "Byte at index 0 is modified")
             assertEquals(42, UNSAFE.getByte(container.ptr.address + 1), "Byte at index 1 is modified")
             assertEquals(-1, UNSAFE.getByte(container.ptr.address + 2), "Byte at index 2 is modified")
@@ -136,9 +136,9 @@ class MemoryStackTest {
             UNSAFE.putByte(container.ptr.address + 2, -1)
             UNSAFE.putByte(container.ptr.address + 3, -69)
 
-            container.reallocate(8, true)
+            container.realloc(8, true)
             assertEquals(prevAddress, container.ptr.address, "Expected realloc in place, but got a new address")
-            assertEquals(8, container.length, "Expected new length to be 8")
+            assertEquals(8, container.len, "Expected new length to be 8")
             assertEquals(69, UNSAFE.getByte(container.ptr.address), "Byte at index 0 is modified")
             assertEquals(42, UNSAFE.getByte(container.ptr.address + 1), "Byte at index 1 is modified")
             assertEquals(-1, UNSAFE.getByte(container.ptr.address + 2), "Byte at index 2 is modified")
@@ -168,9 +168,9 @@ class MemoryStackTest {
             UNSAFE.putByte(dummy.ptr.address + 2, 14)
             UNSAFE.putByte(dummy.ptr.address + 3, -69)
 
-            container.reallocate(8, false)
+            container.realloc(8, false)
             assertNotEquals(prevAddress, container.ptr.address)
-            assertEquals(8, container.length, "Expected new length to be 8")
+            assertEquals(8, container.len, "Expected new length to be 8")
             assertEquals(69, UNSAFE.getByte(container.ptr.address), "Byte at index 0 is modified")
             assertEquals(42, UNSAFE.getByte(container.ptr.address + 1), "Byte at index 1 is modified")
             assertEquals(-1, UNSAFE.getByte(container.ptr.address + 2), "Byte at index 2 is modified")
@@ -201,9 +201,9 @@ class MemoryStackTest {
             UNSAFE.putByte(dummy.ptr.address + 2, 14)
             UNSAFE.putByte(dummy.ptr.address + 3, -69)
 
-            container.reallocate(8, true)
+            container.realloc(8, true)
             assertNotEquals(prevAddress, container.ptr.address)
-            assertEquals(8, container.length, "Expected new length to be 8")
+            assertEquals(8, container.len, "Expected new length to be 8")
             assertEquals(69, UNSAFE.getByte(container.ptr.address), "Byte at index 0 is modified")
             assertEquals(42, UNSAFE.getByte(container.ptr.address + 1), "Byte at index 1 is modified")
             assertEquals(-1, UNSAFE.getByte(container.ptr.address + 2), "Byte at index 2 is modified")
@@ -235,10 +235,10 @@ class MemoryStackTest {
             UNSAFE.putByte(container.ptr.address + 6, -1)
             UNSAFE.putByte(container.ptr.address + 7, -69)
 
-            container.reallocate(4, false)
+            container.realloc(4, false)
 
             assertEquals(prevAddress, container.ptr.address, "Expected realloc in place, but got a new address")
-            assertEquals(4, container.length, "Expected new length to be 4")
+            assertEquals(4, container.len, "Expected new length to be 4")
             assertEquals(69, UNSAFE.getByte(container.ptr.address), "Byte at index 0 is modified")
             assertEquals(42, UNSAFE.getByte(container.ptr.address + 1), "Byte at index 1 is modified")
             assertEquals(-1, UNSAFE.getByte(container.ptr.address + 2), "Byte at index 2 is modified")
@@ -261,10 +261,10 @@ class MemoryStackTest {
             UNSAFE.putByte(container.ptr.address + 6, -1)
             UNSAFE.putByte(container.ptr.address + 7, -69)
 
-            container.reallocate(4, true)
+            container.realloc(4, true)
 
             assertEquals(prevAddress, container.ptr.address, "Expected realloc in place, but got a new address")
-            assertEquals(4, container.length, "Expected new length to be 4")
+            assertEquals(4, container.len, "Expected new length to be 4")
             assertEquals(69, UNSAFE.getByte(container.ptr.address), "Byte at index 0 is modified")
             assertEquals(42, UNSAFE.getByte(container.ptr.address + 1), "Byte at index 1 is modified")
             assertEquals(-1, UNSAFE.getByte(container.ptr.address + 2), "Byte at index 2 is modified")

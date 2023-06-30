@@ -11,7 +11,7 @@ class MutablePointerContainerTest {
         val array = pointer.asMutable()
         assertEquals(0L, array.offset, "Expected initial offset to be 0")
         assertEquals(pointer.ptr, array.ptr, "Expected address to be the same")
-        assertEquals(pointer.length, array.length, "Expected length to be the same")
+        assertEquals(pointer.len, array.len, "Expected length to be the same")
 
         pointer.free()
     }
@@ -49,11 +49,19 @@ class MutablePointerContainerTest {
     fun offsetPointer() {
         val container = Arr.malloc(8).asMutable()
 
-        assertEquals(container.basePointer.address + 4, (container + 4).address, "Expected address to be address + 4")
-        assertEquals(container.basePointer.address - 4, (container - 4).address, "Expected address to be address - 4")
+        assertEquals(container.basePtr.address + 4, (container + 4).address, "Expected address to be address + 4")
+        assertEquals(container.basePtr.address - 4, (container - 4).address, "Expected address to be address - 4")
 
-        assertEquals(container.basePointer.address + 69420, (container + 69420).address, "Expected address to be address + 4")
-        assertEquals(container.basePointer.address - 69420, (container - 69420).address, "Expected address to be address - 4")
+        assertEquals(
+            container.basePtr.address + 69420,
+            (container + 69420).address,
+            "Expected address to be address + 4"
+        )
+        assertEquals(
+            container.basePtr.address - 69420,
+            (container - 69420).address,
+            "Expected address to be address - 4"
+        )
 
         container.free()
     }
@@ -64,13 +72,21 @@ class MutablePointerContainerTest {
 
         container.offset += 69
 
-        assertEquals(container.basePointer.address + 73, (container + 4).address, "Expected address to be address + 4")
-        assertEquals(container.basePointer.address + 65, (container - 4).address, "Expected address to be address - 4")
+        assertEquals(container.basePtr.address + 73, (container + 4).address, "Expected address to be address + 4")
+        assertEquals(container.basePtr.address + 65, (container - 4).address, "Expected address to be address - 4")
 
         container.offset += 114514
 
-        assertEquals(container.basePointer.address + 6969420, (container + 6854837).address, "Expected address to be address + 4")
-        assertEquals(container.basePointer.address - 114514, (container - 229097).address, "Expected address to be address - 4")
+        assertEquals(
+            container.basePtr.address + 6969420,
+            (container + 6854837).address,
+            "Expected address to be address + 4"
+        )
+        assertEquals(
+            container.basePtr.address - 114514,
+            (container - 229097).address,
+            "Expected address to be address - 4"
+        )
 
 
         container.free()

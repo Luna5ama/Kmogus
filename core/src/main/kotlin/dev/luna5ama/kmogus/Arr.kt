@@ -5,9 +5,9 @@ import kotlin.math.max
 
 interface Arr : AutoCloseable {
     val ptr: Ptr
-    val length: Long
+    val len: Long
 
-    fun reallocate(newLength: Long, init: Boolean)
+    fun realloc(newLength: Long, init: Boolean)
     fun free()
 
     override fun close() {
@@ -56,8 +56,8 @@ interface Arr : AutoCloseable {
     }
 }
 
-internal class ArrWrapped(override val ptr: Ptr, override val length: Long) : Arr {
-    override fun reallocate(newLength: Long, init: Boolean) {
+internal class ArrWrapped(override val ptr: Ptr, override val len: Long) : Arr {
+    override fun realloc(newLength: Long, init: Boolean) {
         throw UnsupportedOperationException("Cannot reallocate wrapped ptr")
     }
 
@@ -67,7 +67,7 @@ internal class ArrWrapped(override val ptr: Ptr, override val length: Long) : Ar
 }
 
 internal class ContainerDelegated(@Volatile var ptr: Ptr, @Volatile var length: Long) {
-    fun reallocate(newLength: Long, init: Boolean) {
+    fun realloc(newLength: Long, init: Boolean) {
         require(newLength >= 0) { "Length must be positive or zero" }
 
         synchronized(this) {
@@ -94,10 +94,10 @@ internal class ArrImpl(address: Ptr, length: Long) : Arr {
     val delegated = ContainerDelegated(address, length)
 
     override val ptr: Ptr get() = delegated.ptr
-    override val length: Long get() = delegated.length
+    override val len: Long get() = delegated.length
 
-    override fun reallocate(newLength: Long, init: Boolean) {
-        delegated.reallocate(newLength, init)
+    override fun realloc(newLength: Long, init: Boolean) {
+        delegated.realloc(newLength, init)
     }
 
     override fun free() {
@@ -107,7 +107,7 @@ internal class ArrImpl(address: Ptr, length: Long) : Arr {
 
 
 fun Arr.ensureCapacity(capacity: Long, init: Boolean) {
-    if (capacity > length) reallocate(max(capacity, length * 2), init)
+    if (capacity > len) realloc(max(capacity, len * 2), init)
 }
 
 operator fun Arr.plus(offset: Long) = ptr + offset

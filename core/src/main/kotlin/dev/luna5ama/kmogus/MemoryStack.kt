@@ -35,7 +35,7 @@ class MemoryStack private constructor(initCapacity: Long) : AutoCloseable {
         container.frameIndex = counterStack.index
         container.stackIndex = containerStack.push(container)
         container.ptr = base.ptr + offset
-        container.length = size
+        container.len = size
 
         return container
     }
@@ -112,13 +112,13 @@ class MemoryStack private constructor(initCapacity: Long) : AutoCloseable {
         var frameIndex = 0
 
         override var ptr: Ptr = Ptr.NULL
-        override var length: Long = 0L
+        override var len: Long = 0L
 
-        override fun reallocate(newLength: Long, init: Boolean) {
+        override fun realloc(newLength: Long, init: Boolean) {
             check(frameIndex == counterStack.index) { "Cannot reallocate ptr from previous stack frame" }
 
             val prevAddress = ptr
-            val prevLength = length
+            val prevLength = len
 
             if (newLength == prevLength) return
 
@@ -129,27 +129,27 @@ class MemoryStack private constructor(initCapacity: Long) : AutoCloseable {
                     ptr = otherPointer.ptr
 
                     otherPointer.ptr = prevAddress
-                    otherPointer.length = prevLength
+                    otherPointer.len = prevLength
 
                     containerStack[stackIndex] = otherPointer
                     containerStack[otherPointer.stackIndex] = this
                 }
 
-                length = newLength
+                len = newLength
 
                 memcpy(prevAddress, ptr, prevLength)
                 if (init) {
                     (ptr + prevLength).setMemory(newLength - prevLength, 0)
                 }
             } else {
-                length = newLength
+                len = newLength
 
                 if (containerStack.peek() !== this) {
                     val dummy = newContainer()
                     dummy.frameIndex = frameIndex
                     dummy.stackIndex = containerStack.push(dummy)
                     dummy.ptr = ptr + newLength
-                    dummy.length = prevLength - newLength
+                    dummy.len = prevLength - newLength
                     counterStack.inc()
                 }
             }
@@ -164,7 +164,7 @@ class MemoryStack private constructor(initCapacity: Long) : AutoCloseable {
             check(frameIndex == stackTop) { "Frame stack is corrupted while releasing top pointers, expected current frame: $frameIndex, actual: $stackTop" }
             val last = containerStack.pop()
             check(last === this) { "Frame stack is corrupted while releasing top pointers, expected ptr: $this, actual: $last" }
-            baseOffset -= length
+            baseOffset -= len
             freeContainer(this)
         }
     }
