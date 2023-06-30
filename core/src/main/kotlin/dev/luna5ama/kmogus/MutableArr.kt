@@ -3,15 +3,15 @@ package dev.luna5ama.kmogus
 class MutableArr(val base: Arr) : Arr by base {
     var offset = 0L
 
-    val basePointer get() = base.ptr
-    val baseLength get() = base.length
+    val basePtr get() = base.ptr
+    val baseLen get() = base.len
 
-    override val length: Long get() = base.length - offset
-    override val ptr get() = basePointer + offset
+    override val len: Long get() = base.len - offset
+    override val ptr get() = basePtr + offset
 
     fun offset(ptr: Ptr) {
-        require(ptr.address in basePointer.address..(basePointer.address + baseLength)) { "Ptr out of bounds"}
-        offset = ptr.address - basePointer.address
+        require(ptr.address in basePtr.address..(basePtr.address + baseLen)) { "Ptr out of bounds" }
+        offset = ptr.address - basePtr.address
     }
 
     fun reset() {

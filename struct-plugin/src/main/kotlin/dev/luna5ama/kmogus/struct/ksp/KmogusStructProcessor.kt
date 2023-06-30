@@ -9,25 +9,14 @@ import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
 import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.squareup.kotlinpoet.AnnotationSpec
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.CodeBlock
-import com.squareup.kotlinpoet.DelicateKotlinPoetApi
-import com.squareup.kotlinpoet.FileSpec
-import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.KModifier
-import com.squareup.kotlinpoet.ParameterSpec
+import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.STAR
-import com.squareup.kotlinpoet.TypeSpec
-import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
+import dev.luna5ama.kmogus.Arr
 import dev.luna5ama.kmogus.MemoryStack
 import dev.luna5ama.kmogus.MutableArr
 import dev.luna5ama.kmogus.Ptr
-import dev.luna5ama.kmogus.Arr
 import dev.luna5ama.kmogus.struct.Field
 import dev.luna5ama.kmogus.struct.Padding
 import dev.luna5ama.kmogus.struct.Struct
@@ -148,16 +137,20 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
                     .build()
             )
 
-        fun TypeSpec.Builder.addBasics() = addProperty(
-            PropertySpec.builder("address", Long::class)
-                .initializer("address")
-                .build()
-        ).addFunction(
-            FunSpec.builder("asPointer")
-                .returns(Ptr::class)
-                .addStatement("return Ptr(address)")
-                .build()
-        )
+        fun TypeSpec.Builder.addBasics() =
+            addProperty(
+                PropertySpec.builder("address", Long::class)
+                    .initializer("address")
+                    .build()
+            ).addProperty(
+                PropertySpec.builder("ptr", Ptr::class)
+                    .getter(
+                        FunSpec.getterBuilder()
+                            .addStatement("return Ptr(address)")
+                            .build()
+                    )
+                    .build()
+            )
 
         fun TypeSpec.Builder.addOperatorFunctions() =
             addFunction(

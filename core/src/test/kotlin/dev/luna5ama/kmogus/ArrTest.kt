@@ -11,7 +11,7 @@ class ArrTest {
     fun mallocEmpty() {
         val container = Arr.malloc(0)
         assertEquals(0L, container.ptr.address, "Empty ptr should have address 0")
-        assertEquals(0L, container.length, "Empty ptr should have length 0")
+        assertEquals(0L, container.len, "Empty ptr should have length 0")
 
         container.free()
     }
@@ -20,7 +20,7 @@ class ArrTest {
     fun mallocNonEmpty() {
         val container = Arr.malloc(69)
         assertNotEquals(0L, container.ptr.address, "Non-empty ptr should have non-zero address")
-        assertEquals(69L, container.length, "Expected length 69")
+        assertEquals(69L, container.len, "Expected length 69")
 
         container.free()
     }
@@ -45,7 +45,7 @@ class ArrTest {
     fun callocEmpty() {
         val container = Arr.calloc(0)
         assertEquals(0L, container.ptr.address, "Empty ptr should have address 0")
-        assertEquals(0L, container.length, "Empty ptr should have length 0")
+        assertEquals(0L, container.len, "Empty ptr should have length 0")
 
         container.free()
     }
@@ -54,7 +54,7 @@ class ArrTest {
     fun callocNonEmpty() {
         val container = Arr.calloc(69)
         assertNotEquals(0L, container.ptr.address, "Non-empty ptr should have non-zero address")
-        assertEquals(69L, container.length, "Expected length 69")
+        assertEquals(69L, container.len, "Expected length 69")
 
         for (i in 0 until 69) {
             assertEquals(0, UNSAFE.getByte(container.ptr.address + i), "Byte at index $i is not 0")
@@ -82,18 +82,18 @@ class ArrTest {
     @Test
     fun reallocWith0NoInit() {
         val container = Arr.malloc(0)
-        container.reallocate(8, false)
+        container.realloc(8, false)
         assertNotEquals(0L, container.ptr.address, "Non-empty ptr should have non-zero address")
-        assertEquals(8L, container.length, "Expected length 8")
+        assertEquals(8L, container.len, "Expected length 8")
         container.free()
     }
 
     @Test
     fun reallocWith0Init() {
         val container = Arr.malloc(0)
-        container.reallocate(8, true)
+        container.realloc(8, true)
         assertNotEquals(0L, container.ptr.address, "Non-empty ptr should have non-zero address")
-        assertEquals(8L, container.length, "Expected length 8")
+        assertEquals(8L, container.len, "Expected length 8")
 
         for (i in 0 until 8) {
             assertEquals(0, UNSAFE.getByte(container.ptr.address + i), "Byte at index $i is not 0")
@@ -110,8 +110,8 @@ class ArrTest {
         UNSAFE.putByte(container.ptr.address + 2, -1)
         UNSAFE.putByte(container.ptr.address + 3, 5)
 
-        container.reallocate(8, false)
-        assertEquals(8L, container.length, "Expected length 8")
+        container.realloc(8, false)
+        assertEquals(8L, container.len, "Expected length 8")
         assertEquals(69, UNSAFE.getByte(container.ptr.address), "Byte at index 0 is not 69")
         assertEquals(42, UNSAFE.getByte(container.ptr.address + 1), "Byte at index 1 is not 42")
         assertEquals(-1, UNSAFE.getByte(container.ptr.address + 2), "Byte at index 2 is not -1")
@@ -128,8 +128,8 @@ class ArrTest {
         UNSAFE.putByte(pointer.ptr.address + 2, -1)
         UNSAFE.putByte(pointer.ptr.address + 3, 5)
 
-        pointer.reallocate(8, true)
-        assertEquals(8L, pointer.length, "Expected length 8")
+        pointer.realloc(8, true)
+        assertEquals(8L, pointer.len, "Expected length 8")
         assertEquals(69, UNSAFE.getByte(pointer.ptr.address), "Byte at index 0 is not 69")
         assertEquals(42, UNSAFE.getByte(pointer.ptr.address + 1), "Byte at index 1 is not 42")
         assertEquals(-1, UNSAFE.getByte(pointer.ptr.address + 2), "Byte at index 2 is not -1")
@@ -151,8 +151,8 @@ class ArrTest {
         UNSAFE.putByte(pointer.ptr.address + 2, -1)
         UNSAFE.putByte(pointer.ptr.address + 3, 5)
 
-        pointer.reallocate(2, false)
-        assertEquals(2L, pointer.length, "Expected length 8")
+        pointer.realloc(2, false)
+        assertEquals(2L, pointer.len, "Expected length 8")
         assertEquals(69, UNSAFE.getByte(pointer.ptr.address), "Byte at index 0 is not 69")
         assertEquals(42, UNSAFE.getByte(pointer.ptr.address + 1), "Byte at index 1 is not 42")
 
@@ -167,8 +167,8 @@ class ArrTest {
         UNSAFE.putByte(pointer.ptr.address + 2, -1)
         UNSAFE.putByte(pointer.ptr.address + 3, 5)
 
-        pointer.reallocate(2, true)
-        assertEquals(2L, pointer.length, "Expected length 8")
+        pointer.realloc(2, true)
+        assertEquals(2L, pointer.len, "Expected length 8")
         assertEquals(69, UNSAFE.getByte(pointer.ptr.address), "Byte at index 0 is not 69")
         assertEquals(42, UNSAFE.getByte(pointer.ptr.address + 1), "Byte at index 1 is not 42")
 
@@ -183,9 +183,9 @@ class ArrTest {
         UNSAFE.putByte(pointer.ptr.address + 2, -1)
         UNSAFE.putByte(pointer.ptr.address + 3, 5)
 
-        pointer.reallocate(0, true)
+        pointer.realloc(0, true)
         assertEquals(0L, pointer.ptr.address, "Expected address 0")
-        assertEquals(0L, pointer.length, "Expected length 0")
+        assertEquals(0L, pointer.len, "Expected length 0")
 
         pointer.free()
     }
@@ -198,9 +198,9 @@ class ArrTest {
         UNSAFE.putByte(container.ptr.address + 2, -1)
         UNSAFE.putByte(container.ptr.address + 3, 5)
 
-        container.reallocate(0, true)
+        container.realloc(0, true)
         assertEquals(0L, container.ptr.address, "Expected address 0")
-        assertEquals(0L, container.length, "Expected length 0")
+        assertEquals(0L, container.len, "Expected length 0")
 
         container.free()
     }
@@ -210,11 +210,11 @@ class ArrTest {
         val pointer = Arr.malloc(4)
 
         assertFailsWith(IllegalArgumentException::class) {
-            pointer.reallocate(-1, true)
+            pointer.realloc(-1, true)
         }
 
         assertFailsWith(IllegalArgumentException::class) {
-            pointer.reallocate(-1, false)
+            pointer.realloc(-1, false)
         }
 
         pointer.free()
@@ -225,35 +225,39 @@ class ArrTest {
         val pointer = UNSAFE.allocateMemory(4)
 
         val wrapped = Arr.wrap(pointer, 4)
-        assertEquals(pointer, wrapped.ptr.address, "Expected address: 0x%016X, actual: 0x%016X".format(pointer, wrapped.ptr.address))
-        assertEquals(4L, wrapped.length, "Expected length 4")
+        assertEquals(
+            pointer,
+            wrapped.ptr.address,
+            "Expected address: 0x%016X, actual: 0x%016X".format(pointer, wrapped.ptr.address)
+        )
+        assertEquals(4L, wrapped.len, "Expected length 4")
 
         assertFailsWith(UnsupportedOperationException::class) {
             wrapped.free()
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(8, true)
+            wrapped.realloc(8, true)
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(8, false)
+            wrapped.realloc(8, false)
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(1, true)
+            wrapped.realloc(1, true)
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(1, false)
+            wrapped.realloc(1, false)
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(0, true)
+            wrapped.realloc(0, true)
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(0, false)
+            wrapped.realloc(0, false)
         }
 
         UNSAFE.freeMemory(pointer)
@@ -280,7 +284,7 @@ class ArrTest {
         wrapped = Arr.wrap(buffer.asDoubleBuffer())
         assertEquals(buffer.address, wrapped.ptr.address, "Expected address: 0x%016X, actual: 0x%016X".format(buffer.address, wrapped.ptr.address))
 
-        assertEquals(8L, wrapped.length, "Expected length 8")
+        assertEquals(8L, wrapped.len, "Expected length 8")
 
         UNSAFE.putByte(wrapped.ptr.address, 69)
         UNSAFE.putByte(wrapped.ptr.address + 1, 42)
@@ -302,43 +306,43 @@ class ArrTest {
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(16, true)
+            wrapped.realloc(16, true)
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(16, false)
+            wrapped.realloc(16, false)
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(8, true)
+            wrapped.realloc(8, true)
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(8, false)
+            wrapped.realloc(8, false)
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(1, true)
+            wrapped.realloc(1, true)
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(1, false)
+            wrapped.realloc(1, false)
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(0, true)
+            wrapped.realloc(0, true)
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(0, false)
+            wrapped.realloc(0, false)
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(-1, true)
+            wrapped.realloc(-1, true)
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(-1, false)
+            wrapped.realloc(-1, false)
         }
     }
 
@@ -351,8 +355,12 @@ class ArrTest {
         buffer.put(3, 4)
 
         val wrapped = Arr.wrap(buffer, 4L)
-        assertEquals(buffer.address + 4L, wrapped.ptr.address, "Expected address: 0x%016X, actual: 0x%016X".format(buffer.address + 4L, wrapped.ptr.address))
-        assertEquals(4L, wrapped.length, "Expected length 4")
+        assertEquals(
+            buffer.address + 4L,
+            wrapped.ptr.address,
+            "Expected address: 0x%016X, actual: 0x%016X".format(buffer.address + 4L, wrapped.ptr.address)
+        )
+        assertEquals(4L, wrapped.len, "Expected length 4")
 
         UNSAFE.putByte(wrapped.ptr.address, 69)
         UNSAFE.putByte(wrapped.ptr.address + 1, 42)
@@ -374,43 +382,43 @@ class ArrTest {
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(16, true)
+            wrapped.realloc(16, true)
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(16, false)
+            wrapped.realloc(16, false)
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(8, true)
+            wrapped.realloc(8, true)
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(8, false)
+            wrapped.realloc(8, false)
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(1, true)
+            wrapped.realloc(1, true)
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(1, false)
+            wrapped.realloc(1, false)
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(0, true)
+            wrapped.realloc(0, true)
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(0, false)
+            wrapped.realloc(0, false)
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(-1, true)
+            wrapped.realloc(-1, true)
         }
 
         assertFailsWith(UnsupportedOperationException::class) {
-            wrapped.reallocate(-1, false)
+            wrapped.realloc(-1, false)
         }
     }
 
