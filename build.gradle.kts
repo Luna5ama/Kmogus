@@ -2,6 +2,11 @@
 
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
+allprojects {
+    group = "dev.luna5ama"
+    version = "1.0-SNAPSHOT"
+}
+
 plugins {
     kotlin("jvm")
     `maven-publish`
@@ -13,9 +18,6 @@ repositories {
 }
 
 subprojects {
-    group = "dev.luna5ama"
-    version = "1.0.0-SNAPSHOT"
-
     apply {
         plugin("java")
         plugin("kotlin")
