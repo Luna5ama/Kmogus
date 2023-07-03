@@ -32,6 +32,7 @@ class CoreCodeGenProcessor(private val environment: SymbolProcessorEnvironment) 
         FileSpec.builder("dev.luna5ama.kmogus", "Memcpy")
             .heap2heap()
             .heap2pointer()
+            .pointer2heap()
             .pointer2Pointer()
             .build()
             .writeTo(environment.codeGenerator, Dependencies(false))
@@ -74,26 +75,6 @@ class CoreCodeGenProcessor(private val environment: SymbolProcessorEnvironment) 
 
             addFunction(
                 FunSpec.builder("memcpy")
-                    .addParameter("src", ClassName("dev.luna5ama.kmogus", "Ptr"))
-                    .addParameter("dst", pArray)
-                    .addParameter("length", Long::class)
-                    .addStatement("UNSAFE.copyMemory(null, src.address, dst, $pArrayOffset, length)")
-                    .build()
-            )
-
-            addFunction(
-                FunSpec.builder("memcpy")
-                    .addParameter("src", ClassName("dev.luna5ama.kmogus", "Ptr"))
-                    .addParameter("srcOffset", Long::class)
-                    .addParameter("dst", pArray)
-                    .addParameter("dstOffset", Long::class)
-                    .addParameter("length", Long::class)
-                    .addStatement("UNSAFE.copyMemory(null, src.address + srcOffset, dst, $pArrayOffset + dstOffset, length)")
-                    .build()
-            )
-
-            addFunction(
-                FunSpec.builder("memcpy")
                     .addParameter("src", pArray)
                     .addParameter("dst", ClassName("dev.luna5ama.kmogus", "Ptr"))
                     .addParameter("length", Long::class)
@@ -116,13 +97,41 @@ class CoreCodeGenProcessor(private val environment: SymbolProcessorEnvironment) 
         return this
     }
 
+    private fun FileSpec.Builder.pointer2heap(): FileSpec.Builder {
+        for ((p, pArray) in primitiveTypes) {
+            val pArrayOffset = "${p.simpleName!!.uppercase()}_ARRAY_OFFSET"
+
+            addFunction(
+                FunSpec.builder("memcpy")
+                    .addParameter("src", ClassName("dev.luna5ama.kmogus", "Ptr"))
+                    .addParameter("dst", pArray)
+                    .addParameter("length", Long::class)
+                    .addStatement("UNSAFE.copyMemory(null, src.address, dst, $pArrayOffset, length)")
+                    .build()
+            )
+
+            addFunction(
+                FunSpec.builder("memcpy")
+                    .addParameter("src", ClassName("dev.luna5ama.kmogus", "Ptr"))
+                    .addParameter("srcOffset", Long::class)
+                    .addParameter("dst", pArray)
+                    .addParameter("dstOffset", Long::class)
+                    .addParameter("length", Long::class)
+                    .addStatement("UNSAFE.copyMemory(null, src.address + srcOffset, dst, $pArrayOffset + dstOffset, length)")
+                    .build()
+            )
+        }
+
+        return this
+    }
+
     private fun FileSpec.Builder.pointer2Pointer(): FileSpec.Builder {
         return addFunction(
             FunSpec.builder("memcpy")
                 .addParameter("src", ClassName("dev.luna5ama.kmogus", "Ptr"))
                 .addParameter("dst", ClassName("dev.luna5ama.kmogus", "Ptr"))
                 .addParameter("length", Long::class)
-                .addStatement("UNSAFE.copyMemory(null, src.address, dst, dst.address, length)")
+                .addStatement("UNSAFE.copyMemory(null, src.address, null, dst.address, length)")
                 .build()
         ).addFunction(
             FunSpec.builder("memcpy")
@@ -131,7 +140,7 @@ class CoreCodeGenProcessor(private val environment: SymbolProcessorEnvironment) 
                 .addParameter("dst", ClassName("dev.luna5ama.kmogus", "Ptr"))
                 .addParameter("dstOffset", Long::class)
                 .addParameter("length", Long::class)
-                .addStatement("UNSAFE.copyMemory(null, src.address + srcOffset, dst, dst.address + dstOffset, length)")
+                .addStatement("UNSAFE.copyMemory(null, src.address + srcOffset, null, dst.address + dstOffset, length)")
                 .build()
         )
     }
