@@ -2,7 +2,7 @@ package dev.luna5ama.kmogus
 
 import java.util.*
 
-class MemoryStack private constructor(initCapacity: Long) : AutoCloseable {
+class MemoryStack(initCapacity: Long) : AutoCloseable {
     private val base = Arr.malloc(initCapacity)
     private var baseOffset = 0L
 
@@ -27,8 +27,10 @@ class MemoryStack private constructor(initCapacity: Long) : AutoCloseable {
     private fun malloc0(size: Long): Container {
         val container = newContainer()
 
+        val alignedSize = (size + 7L) and 0xFFFFFFF8L
+
         val offset = baseOffset
-        baseOffset += size
+        baseOffset += alignedSize
         base.ensureCapacity(baseOffset, false)
 
         counterStack.inc()
@@ -36,6 +38,7 @@ class MemoryStack private constructor(initCapacity: Long) : AutoCloseable {
         container.stackIndex = containerStack.push(container)
         container.ptr = base.ptr + offset
         container.len = size
+        container.padding = alignedSize - size
 
         return container
     }
@@ -111,14 +114,17 @@ class MemoryStack private constructor(initCapacity: Long) : AutoCloseable {
         var stackIndex = 0
         var frameIndex = 0
 
-        override var ptr: Ptr = Ptr.NULL
-        override var len: Long = 0L
+        override var ptr = Ptr.NULL
+        override var len = 0L
+
+        var padding = 0L
 
         override fun realloc(newLength: Long, init: Boolean) {
             check(frameIndex == counterStack.index) { "Cannot reallocate ptr from previous stack frame" }
 
             val prevAddress = ptr
             val prevLength = len
+            val prevPadding = padding
 
             if (newLength == prevLength) return
 
@@ -127,17 +133,20 @@ class MemoryStack private constructor(initCapacity: Long) : AutoCloseable {
                     val otherPointer = malloc0(newLength)
 
                     ptr = otherPointer.ptr
+                    padding = otherPointer.padding
 
                     otherPointer.ptr = prevAddress
                     otherPointer.len = prevLength
+                    otherPointer.padding = prevPadding
 
                     containerStack[stackIndex] = otherPointer
                     containerStack[otherPointer.stackIndex] = this
+
+                    memcpy(prevAddress, ptr, prevLength)
                 }
 
                 len = newLength
 
-                memcpy(prevAddress, ptr, prevLength)
                 if (init) {
                     (ptr + prevLength).setMemory(newLength - prevLength, 0)
                 }
@@ -145,12 +154,7 @@ class MemoryStack private constructor(initCapacity: Long) : AutoCloseable {
                 len = newLength
 
                 if (containerStack.peek() !== this) {
-                    val dummy = newContainer()
-                    dummy.frameIndex = frameIndex
-                    dummy.stackIndex = containerStack.push(dummy)
-                    dummy.ptr = ptr + newLength
-                    dummy.len = prevLength - newLength
-                    counterStack.inc()
+                    padding += prevLength - newLength
                 }
             }
         }

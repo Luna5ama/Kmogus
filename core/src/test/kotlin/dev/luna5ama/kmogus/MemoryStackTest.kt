@@ -31,13 +31,37 @@ class MemoryStackTest {
             val c = malloc(15)
             val d = malloc(8)
 
-            assertEquals(a.ptr.address + 4, b.ptr.address, "b.address != a.address + 4")
-            assertEquals(b.ptr.address + 1, c.ptr.address, "c.address != b.address + 1")
-            assertEquals(c.ptr.address + 15, d.ptr.address, "d.address != c.address + 15")
+            assertEquals(a.ptr.address + 8, b.ptr.address, "b.address != a.address + 4")
+            assertEquals(b.ptr.address + 8, c.ptr.address, "c.address != b.address + 1")
+            assertEquals(c.ptr.address + 16, d.ptr.address, "d.address != c.address + 15")
 
             assertEquals(4, a.len, "a.length != 4")
             assertEquals(1, b.len, "b.length != 1")
             assertEquals(15, c.len, "c.length != 15")
+        }
+    }
+
+    @Test
+    fun alignment() {
+        MemoryStack {
+            val a = malloc(1)
+            val b = malloc(2)
+            val c = malloc(3)
+            val d = malloc(4)
+            val e = malloc(5)
+            val f = malloc(6)
+            val g = malloc(7)
+            val h = malloc(8)
+            val i = malloc(9)
+
+            assertEquals(a.ptr.address + 8, b.ptr.address, "a.padding != 8")
+            assertEquals(b.ptr.address + 8, c.ptr.address, "b.padding != 8")
+            assertEquals(c.ptr.address + 8, d.ptr.address, "c.padding != 8")
+            assertEquals(d.ptr.address + 8, e.ptr.address, "d.padding != 8")
+            assertEquals(e.ptr.address + 8, f.ptr.address, "e.padding != 8")
+            assertEquals(f.ptr.address + 8, g.ptr.address, "f.padding != 8")
+            assertEquals(g.ptr.address + 8, h.ptr.address, "g.padding != 8")
+            assertEquals(h.ptr.address + 8, i.ptr.address, "h.padding != 8")
         }
     }
 
