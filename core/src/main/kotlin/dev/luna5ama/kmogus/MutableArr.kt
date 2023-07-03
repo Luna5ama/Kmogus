@@ -26,6 +26,14 @@ class MutableArr(val base: Arr) : Arr by base {
         pos = 0L
     }
 
+    override fun realloc(newLength: Long, init: Boolean) {
+        val oldLen = baseLen
+        base.realloc(newLength, init)
+        if (len == oldLen) {
+            len = newLength
+        }
+    }
+
     fun reset() {
         pos = 0L
         len = baseLen
