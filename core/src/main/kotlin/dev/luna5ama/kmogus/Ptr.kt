@@ -105,6 +105,36 @@ value class Ptr(val address: Long) {
         return UNSAFE.getDouble(address + offset)
     }
 
+    fun setByteInc(value: Byte): Ptr {
+        UNSAFE.putByte(address, value)
+        return Ptr(address + 1)
+    }
+
+    fun setShortInc(value: Short): Ptr {
+        UNSAFE.putShort(address, value)
+        return Ptr(address + 2)
+    }
+
+    fun setIntInc(value: Int): Ptr {
+        UNSAFE.putInt(address, value)
+        return Ptr(address + 4)
+    }
+
+    fun setLongInc(value: Long): Ptr {
+        UNSAFE.putLong(address, value)
+        return Ptr(address + 8)
+    }
+
+    fun setFloatInc(value: Float): Ptr {
+        UNSAFE.putFloat(address, value)
+        return Ptr(address + 4)
+    }
+
+    fun setDoubleInc(value: Double): Ptr {
+        UNSAFE.putDouble(address, value)
+        return Ptr(address + 8)
+    }
+
 
     operator fun plus(offset: Long) = Ptr(address + offset)
 
