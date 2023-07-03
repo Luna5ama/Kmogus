@@ -22,7 +22,12 @@ class CoreCodeGenProcessor(private val environment: SymbolProcessorEnvironment) 
     )
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
-        if (resolver.getAllFiles().any { it.fileName == "Memcpy.kt" }) return emptyList()
+        genMemcpy(resolver)
+        return emptyList()
+    }
+
+    private fun genMemcpy(resolver: Resolver) {
+        if (resolver.getAllFiles().any { it.fileName == "Memcpy.kt" }) return
 
         FileSpec.builder("dev.luna5ama.kmogus", "Memcpy")
             .heap2heap()
@@ -30,8 +35,6 @@ class CoreCodeGenProcessor(private val environment: SymbolProcessorEnvironment) 
             .pointer2Pointer()
             .build()
             .writeTo(environment.codeGenerator, Dependencies(false))
-
-        return emptyList()
     }
 
     private fun FileSpec.Builder.heap2heap(): FileSpec.Builder {
