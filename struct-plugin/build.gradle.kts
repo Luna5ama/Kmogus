@@ -24,6 +24,7 @@ dependencies {
 
 tasks {
     processResources {
+        outputs.upToDateWhen { false }
         expand("version" to project.version)
     }
 }
