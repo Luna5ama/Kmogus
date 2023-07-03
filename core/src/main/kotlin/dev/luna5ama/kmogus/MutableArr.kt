@@ -8,6 +8,7 @@ class MutableArr(val base: Arr) : Arr by base {
 
     override val len: Long get() = base.len - offset
     override val ptr get() = basePtr + offset
+    val remaining get() = len
 
     fun offset(ptr: Ptr) {
         require(ptr.address in basePtr.address..(basePtr.address + baseLen)) { "Ptr out of bounds" }
