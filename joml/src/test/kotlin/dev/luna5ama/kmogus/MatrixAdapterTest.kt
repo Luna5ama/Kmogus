@@ -47,11 +47,11 @@ class MatrixAdapterTest {
             ) as Matrix2fc
             val arr = Arr.malloc(4L * 4L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 8L
+            arr.pos = 8L
 
             m.copyToMutableArr(arr)
 
-            assertEquals(24L, arr.offset)
+            assertEquals(24L, arr.pos)
             assertEquals(ptr.getFloat(8L), 114.514f)
             assertEquals(ptr.getFloat(12L), -1f)
             assertEquals(ptr.getFloat(16L), 1919f)
@@ -100,11 +100,11 @@ class MatrixAdapterTest {
 
             val arr = Arr.malloc(9L * 4L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 8L
+            arr.pos = 8L
 
             m.copyToMutableArr(arr)
 
-            assertEquals(44L, arr.offset)
+            assertEquals(44L, arr.pos)
             assertEquals(ptr.getFloat(8L), 114.514f)
             assertEquals(ptr.getFloat(12L), -1f)
             assertEquals(ptr.getFloat(16L), 1919f)
@@ -158,11 +158,11 @@ class MatrixAdapterTest {
 
             val arr = Arr.malloc(9L * 4L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 8L
+            arr.pos = 8L
 
             m.copyToMutableArr(arr)
 
-            assertEquals(44L, arr.offset)
+            assertEquals(44L, arr.pos)
             assertEquals(ptr.getFloat(8L), 114.514f)
             assertEquals(ptr.getFloat(12L), -1f)
             assertEquals(ptr.getFloat(16L), 1919f)
@@ -225,11 +225,11 @@ class MatrixAdapterTest {
 
             val arr = Arr.malloc(16L * 4L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 8L
+            arr.pos = 8L
 
             m.copyToMutableArr(arr)
 
-            assertEquals(72L, arr.offset)
+            assertEquals(72L, arr.pos)
             assertEquals(ptr.getFloat(8L), 114.514f)
             assertEquals(ptr.getFloat(12L), -1f)
             assertEquals(ptr.getFloat(16L), 1919f)
@@ -285,11 +285,11 @@ class MatrixAdapterTest {
 
             val arr = Arr.malloc(6L * 4L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 8L
+            arr.pos = 8L
 
             m.copyToMutableArr(arr)
 
-            assertEquals(32L, arr.offset)
+            assertEquals(32L, arr.pos)
             assertEquals(ptr.getFloat(8L), 114.514f)
             assertEquals(ptr.getFloat(12L), -1f)
             assertEquals(ptr.getFloat(16L), 1919f)
@@ -343,11 +343,11 @@ class MatrixAdapterTest {
 
             val arr = Arr.malloc(12L * 4L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 8L
+            arr.pos = 8L
 
             m.copyToMutableArr(arr)
 
-            assertEquals(56L, arr.offset)
+            assertEquals(56L, arr.pos)
             assertEquals(ptr.getFloat(8L), 114.514f)
             assertEquals(ptr.getFloat(12L), -1f)
             assertEquals(ptr.getFloat(16L), 1919f)
@@ -420,11 +420,11 @@ class MatrixAdapterTest {
 
             val arr = Arr.malloc(4L * 4L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 8L
+            arr.pos = 8L
 
             m.copyToMutableArr(arr)
 
-            assertEquals(24L, arr.offset)
+            assertEquals(24L, arr.pos)
             assertEquals(ptr.getFloat(8L), 114.514f)
             assertEquals(ptr.getFloat(12L), -1f)
             assertEquals(ptr.getFloat(16L), 1919f)
@@ -506,11 +506,11 @@ class MatrixAdapterTest {
 
             val arr = Arr.malloc(9L * 4L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 8L
+            arr.pos = 8L
 
             m.copyToMutableArr(arr)
 
-            assertEquals(44L, arr.offset)
+            assertEquals(44L, arr.pos)
             assertEquals(ptr.getFloat(8L), 114.514f)
             assertEquals(ptr.getFloat(12L), -1f)
             assertEquals(ptr.getFloat(16L), 1919f)
@@ -620,11 +620,11 @@ class MatrixAdapterTest {
 
             val arr = Arr.malloc(16L * 4L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 8L
+            arr.pos = 8L
 
             m.copyToMutableArr(arr)
 
-            assertEquals(72L, arr.offset)
+            assertEquals(72L, arr.pos)
             assertEquals(ptr.getFloat(8L), 114.514f)
             assertEquals(ptr.getFloat(12L), -1f)
             assertEquals(ptr.getFloat(16L), 1919f)
@@ -707,11 +707,11 @@ class MatrixAdapterTest {
 
             val arr = Arr.malloc(6L * 4L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 8L
+            arr.pos = 8L
 
             m.copyToMutableArr(arr)
 
-            assertEquals(32L, arr.offset)
+            assertEquals(32L, arr.pos)
             assertEquals(ptr.getFloat(8L), 114.514f)
             assertEquals(ptr.getFloat(12L), -1f)
             assertEquals(ptr.getFloat(16L), 1919f)
@@ -804,11 +804,11 @@ class MatrixAdapterTest {
 
             val arr = Arr.malloc(12L * 4L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 8L
+            arr.pos = 8L
 
             m.copyToMutableArr(arr)
 
-            assertEquals(56L, arr.offset)
+            assertEquals(56L, arr.pos)
             assertEquals(ptr.getFloat(8L), 114.514f)
             assertEquals(ptr.getFloat(12L), -1f)
             assertEquals(ptr.getFloat(16L), 1919f)

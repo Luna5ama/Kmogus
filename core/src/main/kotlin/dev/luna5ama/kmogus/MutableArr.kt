@@ -1,40 +1,47 @@
 package dev.luna5ama.kmogus
 
 class MutableArr(val base: Arr) : Arr by base {
-    var offset = 0L
+    var pos = 0L
 
     val basePtr get() = base.ptr
     val baseLen get() = base.len
 
-    override val len: Long get() = base.len - offset
-    override val ptr get() = basePtr + offset
-    val remaining get() = len
+    override var len = baseLen
+    override val ptr get() = basePtr + pos
 
-    fun offset(ptr: Ptr) {
+    val rem get() = len - pos
+
+    fun pos(ptr: Ptr) {
         require(ptr.address in basePtr.address..(basePtr.address + baseLen)) { "Ptr out of bounds" }
-        offset = ptr.address - basePtr.address
+        pos = ptr.address - basePtr.address
     }
 
     inline fun usePtr(crossinline block: Ptr.() -> Ptr) {
         val ptr = block(ptr)
-        offset(ptr)
+        pos(ptr)
+    }
+
+    fun flip() {
+        len = pos
+        pos = 0L
     }
 
     fun reset() {
-        offset = 0L
+        pos = 0L
+        len = baseLen
     }
 
     operator fun plusAssign(offset: Long) {
-        this.offset += offset
+        this.pos += offset
     }
 
     operator fun minusAssign(offset: Long) {
-        this.offset -= offset
+        this.pos -= offset
     }
 }
 
 fun Arr.asMutable() = MutableArr(this)
 
-operator fun MutableArr.plus(offset: Long) = base + (this.offset + offset)
+operator fun MutableArr.plus(offset: Long) = base + (this.pos + offset)
 
-operator fun MutableArr.minus(offset: Long) = base + (this.offset - offset)
+operator fun MutableArr.minus(offset: Long) = base + (this.pos - offset)

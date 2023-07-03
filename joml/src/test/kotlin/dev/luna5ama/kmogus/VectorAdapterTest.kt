@@ -40,11 +40,11 @@ class VectorAdapterTest {
             val v = Vector2i(114, -1) as Vector2ic
             val arr = Arr.malloc(2L * 4L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 8L
+            arr.pos = 8L
 
             v.copyToMutableArr(arr)
 
-            assertEquals(16L, arr.offset)
+            assertEquals(16L, arr.pos)
             assertEquals(ptr.getInt(8L), 114)
             assertEquals(ptr.getInt(12L), -1)
 
@@ -75,11 +75,11 @@ class VectorAdapterTest {
             val v = Vector3i(114, -1, 1919) as Vector3ic
             val arr = Arr.malloc(3L * 4L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 4L
+            arr.pos = 4L
 
             v.copyToMutableArr(arr)
 
-            assertEquals(16L, arr.offset)
+            assertEquals(16L, arr.pos)
             assertEquals(ptr.getInt(4L), 114)
             assertEquals(ptr.getInt(8L), -1)
             assertEquals(ptr.getInt(12L), 1919)
@@ -112,11 +112,11 @@ class VectorAdapterTest {
             val v = Vector4i(114, -1, 1919, 6) as Vector4ic
             val arr = Arr.malloc(4L * 4L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 8L
+            arr.pos = 8L
 
             v.copyToMutableArr(arr)
 
-            assertEquals(24L, arr.offset)
+            assertEquals(24L, arr.pos)
             assertEquals(ptr.getInt(8L), 114)
             assertEquals(ptr.getInt(12L), -1)
             assertEquals(ptr.getInt(16L), 1919)
@@ -149,11 +149,11 @@ class VectorAdapterTest {
             val v = Vector2f(114.514f, -1f) as Vector2fc
             val arr = Arr.malloc(2L * 4L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 8L
+            arr.pos = 8L
 
             v.copyToMutableArr(arr)
 
-            assertEquals(16L, arr.offset)
+            assertEquals(16L, arr.pos)
             assertEquals(ptr.getFloat(8L), 114.514f)
             assertEquals(ptr.getFloat(12L), -1f)
 
@@ -184,11 +184,11 @@ class VectorAdapterTest {
             val v = Vector3f(114.514f, -1f, 1919f) as Vector3fc
             val arr = Arr.malloc(3L * 4L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 4L
+            arr.pos = 4L
 
             v.copyToMutableArr(arr)
 
-            assertEquals(16L, arr.offset)
+            assertEquals(16L, arr.pos)
             assertEquals(ptr.getFloat(4L), 114.514f)
             assertEquals(ptr.getFloat(8L), -1f)
             assertEquals(ptr.getFloat(12L), 1919f)
@@ -222,11 +222,11 @@ class VectorAdapterTest {
             val v = Vector4f(114.514f, -1f, 1919f, 6f) as Vector4fc
             val arr = Arr.malloc(4L * 4L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 8L
+            arr.pos = 8L
 
             v.copyToMutableArr(arr)
 
-            assertEquals(24L, arr.offset)
+            assertEquals(24L, arr.pos)
             assertEquals(ptr.getFloat(8L), 114.514f)
             assertEquals(ptr.getFloat(12L), -1f)
             assertEquals(ptr.getFloat(16L), 1919f)
@@ -258,11 +258,11 @@ class VectorAdapterTest {
             val v = Vector2d(114.514, -1.0) as Vector2dc
             val arr = Arr.malloc(2L * 8L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 8L
+            arr.pos = 8L
 
             v.copyToMutableArr(arr)
 
-            assertEquals(24L, arr.offset)
+            assertEquals(24L, arr.pos)
             assertEquals(ptr.getDouble(8L), 114.514)
             assertEquals(ptr.getDouble(16L), -1.0)
 
@@ -293,11 +293,11 @@ class VectorAdapterTest {
             val v = Vector3d(114.514, -1.0, 1919.0) as Vector3dc
             val arr = Arr.malloc(3L * 8L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 8L
+            arr.pos = 8L
 
             v.copyToMutableArr(arr)
 
-            assertEquals(32L, arr.offset)
+            assertEquals(32L, arr.pos)
             assertEquals(ptr.getDouble(8L), 114.514)
             assertEquals(ptr.getDouble(16L), -1.0)
             assertEquals(ptr.getDouble(24L), 1919.0)
@@ -330,11 +330,11 @@ class VectorAdapterTest {
             val v = Vector4d(114.514, -1.0, 1919.0, 6.0) as Vector4dc
             val arr = Arr.malloc(4L * 8L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 8L
+            arr.pos = 8L
 
             v.copyToMutableArr(arr)
 
-            assertEquals(40L, arr.offset)
+            assertEquals(40L, arr.pos)
             assertEquals(ptr.getDouble(8L), 114.514)
             assertEquals(ptr.getDouble(16L), -1.0)
             assertEquals(ptr.getDouble(24L), 1919.0)
@@ -384,11 +384,11 @@ class VectorAdapterTest {
             val v = Vector2i(114514, -1)
             val arr = Arr.malloc(2L * 4L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 4L
+            arr.pos = 4L
 
             v.copyToMutableArr(arr)
 
-            assertEquals(12L, arr.offset)
+            assertEquals(12L, arr.pos)
             assertEquals(ptr.getInt(4L), 114514)
             assertEquals(ptr.getInt(8L), -1)
 
@@ -439,11 +439,11 @@ class VectorAdapterTest {
             val v = Vector3i(114514, -1, 1919810)
             val arr = Arr.malloc(3L * 4L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 4L
+            arr.pos = 4L
 
             v.copyToMutableArr(arr)
 
-            assertEquals(16L, arr.offset)
+            assertEquals(16L, arr.pos)
             assertEquals(ptr.getInt(4L), 114514)
             assertEquals(ptr.getInt(8L), -1)
             assertEquals(ptr.getInt(12L), 1919810)
@@ -498,11 +498,11 @@ class VectorAdapterTest {
             val v = Vector4i(114514, -1, 1919810, 810)
             val arr = Arr.malloc(4L * 4L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 4L
+            arr.pos = 4L
 
             v.copyToMutableArr(arr)
 
-            assertEquals(20L, arr.offset)
+            assertEquals(20L, arr.pos)
             assertEquals(ptr.getInt(4L), 114514)
             assertEquals(ptr.getInt(8L), -1)
             assertEquals(ptr.getInt(12L), 1919810)
@@ -552,11 +552,11 @@ class VectorAdapterTest {
             val v = Vector2f(114.514f, -1f)
             val arr = Arr.malloc(2L * 4L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 4L
+            arr.pos = 4L
 
             v.copyToMutableArr(arr)
 
-            assertEquals(12L, arr.offset)
+            assertEquals(12L, arr.pos)
             assertEquals(ptr.getFloat(4L), 114.514f)
             assertEquals(ptr.getFloat(8L), -1f)
 
@@ -607,11 +607,11 @@ class VectorAdapterTest {
             val v = Vector3f(114.514f, -1f, 1919.810f)
             val arr = Arr.malloc(3L * 4L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 4L
+            arr.pos = 4L
 
             v.copyToMutableArr(arr)
 
-            assertEquals(16L, arr.offset)
+            assertEquals(16L, arr.pos)
             assertEquals(ptr.getFloat(4L), 114.514f)
             assertEquals(ptr.getFloat(8L), -1f)
             assertEquals(ptr.getFloat(12L), 1919.810f)
@@ -666,11 +666,11 @@ class VectorAdapterTest {
             val v = Vector4f(114.514f, -1f, 1919.810f, 6.9f)
             val arr = Arr.malloc(4L * 4L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 4L
+            arr.pos = 4L
 
             v.copyToMutableArr(arr)
 
-            assertEquals(20L, arr.offset)
+            assertEquals(20L, arr.pos)
             assertEquals(ptr.getFloat(4L), 114.514f)
             assertEquals(ptr.getFloat(8L), -1f)
             assertEquals(ptr.getFloat(12L), 1919.810f)
@@ -720,11 +720,11 @@ class VectorAdapterTest {
             val v = Vector2d(114.514, -1.0)
             val arr = Arr.malloc(2L * 8L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 8L
+            arr.pos = 8L
 
             v.copyToMutableArr(arr)
 
-            assertEquals(24L, arr.offset)
+            assertEquals(24L, arr.pos)
             assertEquals(ptr.getDouble(8L), 114.514)
             assertEquals(ptr.getDouble(16L), -1.0)
 
@@ -775,11 +775,11 @@ class VectorAdapterTest {
             val v = Vector3d(114.514, -1.0, 1919.810)
             val arr = Arr.malloc(3L * 8L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 8L
+            arr.pos = 8L
 
             v.copyToMutableArr(arr)
 
-            assertEquals(32L, arr.offset)
+            assertEquals(32L, arr.pos)
             assertEquals(ptr.getDouble(8L), 114.514)
             assertEquals(ptr.getDouble(16L), -1.0)
             assertEquals(ptr.getDouble(24L), 1919.810)
@@ -834,11 +834,11 @@ class VectorAdapterTest {
             val v = Vector4d(114.514, -1.0, 1919.810, 6.9)
             val arr = Arr.malloc(4L * 8L + 8L).asMutable()
             val ptr = arr.ptr
-            arr.offset = 8L
+            arr.pos = 8L
 
             v.copyToMutableArr(arr)
 
-            assertEquals(40L, arr.offset)
+            assertEquals(40L, arr.pos)
             assertEquals(ptr.getDouble(8L), 114.514)
             assertEquals(ptr.getDouble(16L), -1.0)
             assertEquals(ptr.getDouble(24L), 1919.810)
