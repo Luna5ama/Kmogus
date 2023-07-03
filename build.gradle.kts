@@ -24,7 +24,7 @@ subprojects {
     }
 
     base {
-        archivesName.set("${rootProject.name.toLowerCase()}-${project.name}")
+        archivesName.set("${rootProject.name.lowercase()}-${project.name}")
     }
 
     java {
@@ -45,7 +45,7 @@ subprojects {
 
     tasks {
         test {
-            javaToolchains {
+            project.javaToolchains {
                 this@test.javaLauncher.set(launcherFor {
                     languageVersion.set(JavaLanguageVersion.of(8))
                     vendor.set(JvmVendorSpec.ADOPTIUM)
