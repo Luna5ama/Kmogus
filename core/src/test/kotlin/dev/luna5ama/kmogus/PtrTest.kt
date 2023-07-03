@@ -97,11 +97,53 @@ class PtrTest {
         (container.ptr + 19).setDouble(420.69)
 
         assertEquals(69.toByte(), UNSAFE.getByte(container.ptr.address), "Byte at index 0 should be equal to 69")
-        assertEquals(420.toShort(), UNSAFE.getShort(container.ptr.address + 1), "Short at index 1 should be equal to 420")
+        assertEquals(
+            420.toShort(),
+            UNSAFE.getShort(container.ptr.address + 1),
+            "Short at index 1 should be equal to 420"
+        )
         assertEquals(1337, UNSAFE.getInt(container.ptr.address + 3), "Int at index 3 should be equal to 1337")
         assertEquals(69420L, UNSAFE.getLong(container.ptr.address + 7), "Long at index 7 should be equal to 69420")
         assertEquals(3.14f, UNSAFE.getFloat(container.ptr.address + 15), "Float at index 11 should be equal to 3.14")
-        assertEquals(420.69, UNSAFE.getDouble(container.ptr.address + 19), "Double at index 15 should be equal to 420.69")
+        assertEquals(
+            420.69,
+            UNSAFE.getDouble(container.ptr.address + 19),
+            "Double at index 15 should be equal to 420.69"
+        )
+    }
+
+    @Test
+    fun setInc() {
+        val container = Arr.malloc(420)
+        var ptr = container.ptr
+
+        ptr = ptr.setByteInc(69)
+        assertEquals(1L, ptr.address - container.ptr.address, "Pointer should have been incremented by 1")
+        ptr = ptr.setShortInc(420)
+        assertEquals(3L, ptr.address - container.ptr.address, "Pointer should have been incremented by 3")
+        ptr = ptr.setIntInc(1337)
+        assertEquals(7L, ptr.address - container.ptr.address, "Pointer should have been incremented by 7")
+        ptr = ptr.setLongInc(69420)
+        assertEquals(15L, ptr.address - container.ptr.address, "Pointer should have been incremented by 15")
+        ptr = ptr.setFloatInc(3.14f)
+        assertEquals(19L, ptr.address - container.ptr.address, "Pointer should have been incremented by 19")
+        ptr = ptr.setDoubleInc(420.69)
+        assertEquals(27L, ptr.address - container.ptr.address, "Pointer should have been incremented by 27")
+
+        assertEquals(69.toByte(), UNSAFE.getByte(container.ptr.address), "Byte at index 0 should be equal to 69")
+        assertEquals(
+            420.toShort(),
+            UNSAFE.getShort(container.ptr.address + 1),
+            "Short at index 1 should be equal to 420"
+        )
+        assertEquals(1337, UNSAFE.getInt(container.ptr.address + 3), "Int at index 3 should be equal to 1337")
+        assertEquals(69420L, UNSAFE.getLong(container.ptr.address + 7), "Long at index 7 should be equal to 69420")
+        assertEquals(3.14f, UNSAFE.getFloat(container.ptr.address + 15), "Float at index 11 should be equal to 3.14")
+        assertEquals(
+            420.69,
+            UNSAFE.getDouble(container.ptr.address + 19),
+            "Double at index 15 should be equal to 420.69"
+        )
     }
 
     @Test
