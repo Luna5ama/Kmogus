@@ -14,6 +14,11 @@ class MutableArr(val base: Arr) : Arr by base {
         offset = ptr.address - basePtr.address
     }
 
+    inline fun usePtr(crossinline block: Ptr.() -> Ptr) {
+        val ptr = block(ptr)
+        offset(ptr)
+    }
+
     fun reset() {
         offset = 0L
     }
