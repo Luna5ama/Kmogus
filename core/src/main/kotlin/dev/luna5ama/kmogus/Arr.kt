@@ -105,11 +105,6 @@ internal class ArrImpl(address: Ptr, length: Long) : Arr {
     }
 }
 
-
 fun Arr.ensureCapacity(capacity: Long, init: Boolean) {
     if (capacity > len) realloc(max(capacity, len * 2), init)
 }
-
-operator fun Arr.plus(offset: Long) = ptr + offset
-
-operator fun Arr.minus(offset: Long) = ptr - offset

@@ -1,14 +1,12 @@
 package dev.luna5ama.kmogus
 
-class MutableArr(val base: Arr) : Arr by base {
-    var pos = 0L
+interface MutableArr : Arr {
+    val basePtr: Ptr
+    val baseLen: Long
 
-    val basePtr get() = base.ptr
-    val baseLen get() = base.len
-
-    override var len = baseLen
+    var pos: Long
+    override var len: Long
     override val ptr get() = basePtr + pos
-
     val rem get() = len - pos
 
     fun pos(ptr: Ptr) {
@@ -16,22 +14,9 @@ class MutableArr(val base: Arr) : Arr by base {
         pos = ptr.address - basePtr.address
     }
 
-    inline fun usePtr(crossinline block: Ptr.() -> Ptr) {
-        val ptr = block(ptr)
-        pos(ptr)
-    }
-
     fun flip() {
         len = pos
         pos = 0L
-    }
-
-    override fun realloc(newLength: Long, init: Boolean) {
-        val oldLen = baseLen
-        base.realloc(newLength, init)
-        if (len == oldLen) {
-            len = newLength
-        }
     }
 
     fun reset() {
@@ -48,8 +33,29 @@ class MutableArr(val base: Arr) : Arr by base {
     }
 }
 
-fun Arr.asMutable() = MutableArr(this)
+private class MutableArrImpl(val base: Arr) : MutableArr {
+    override val basePtr get() = base.ptr
+    override val baseLen get() = base.len
 
-operator fun MutableArr.plus(offset: Long) = base + (this.pos + offset)
+    override var pos = 0L
+    override var len = baseLen
 
-operator fun MutableArr.minus(offset: Long) = base + (this.pos - offset)
+    override fun realloc(newLength: Long, init: Boolean) {
+        val oldLen = baseLen
+        base.realloc(newLength, init)
+        if (len == oldLen) {
+            len = newLength
+        }
+    }
+
+    override fun free() {
+        base.free()
+    }
+}
+
+fun Arr.asMutable(): MutableArr = MutableArrImpl(this)
+
+inline fun MutableArr.usePtr(crossinline block: Ptr.() -> Ptr) {
+    val ptr = block(ptr)
+    pos(ptr)
+}

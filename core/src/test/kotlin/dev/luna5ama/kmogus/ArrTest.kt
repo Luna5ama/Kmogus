@@ -421,17 +421,4 @@ class ArrTest {
             wrapped.realloc(-1, false)
         }
     }
-
-    @Test
-    fun offsetPointer() {
-        val container = Arr.malloc(8)
-
-        assertEquals(container.ptr.address + 4, (container + 4).address, "Expected address to be address + 4")
-        assertEquals(container.ptr.address - 4, (container - 4).address, "Expected address to be address - 4")
-
-        assertEquals(container.ptr.address + 69420, (container + 69420).address, "Expected address to be address + 4")
-        assertEquals(container.ptr.address - 69420, (container - 69420).address, "Expected address to be address - 4")
-
-        container.free()
-    }
 }
