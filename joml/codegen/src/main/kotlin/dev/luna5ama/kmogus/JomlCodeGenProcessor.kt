@@ -361,6 +361,8 @@ class JomlCodeGenProcessor(private val environment: SymbolProcessorEnvironment) 
                                             val getterName = getterName[it.type]!!
                                             addStatement("UNSAFE.$setterName(o, ${it.offsetName}, ptr.$getterName(${if (it.offset == 0) "" else it.offset}))")
                                         }
+
+                                        updatePropCall(classInfo, "o")
                                     }
                                     .build()
                             )
