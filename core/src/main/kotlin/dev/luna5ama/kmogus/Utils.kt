@@ -65,6 +65,14 @@ internal val Buffer.byteCapacity: Long
         else -> throw IllegalArgumentException("Unsupported buffer type: ${this.javaClass}")
     }
 
+val ByteArray.byteLength get() = this.size.toLong() * Byte.SIZE_BYTES
+val ShortArray.byteLength get() = this.size.toLong() * Short.SIZE_BYTES
+val CharArray.byteLength get() = this.size.toLong() * Char.SIZE_BYTES
+val IntArray.byteLength get() = this.size.toLong() * Int.SIZE_BYTES
+val LongArray.byteLength get() = this.size.toLong() * Long.SIZE_BYTES
+val FloatArray.byteLength get() = this.size.toLong() * Float.SIZE_BYTES
+val DoubleArray.byteLength get() = this.size.toLong() * Double.SIZE_BYTES
+
 private val DIRECT_BYTE_BUFFER_CLASS = ByteBuffer.allocateDirect(0).order(ByteOrder.nativeOrder()).javaClass
 
 fun nullByteBuffer(): ByteBuffer {
