@@ -25,6 +25,8 @@ class MemoryStack(initCapacity: Long) : AutoCloseable {
     }
 
     private fun malloc0(size: Long): Container {
+        check(baseOffset >= 0L) { "Memory stack is corrupted: baseOffset=$baseOffset" }
+
         val container = newContainer()
 
         val alignedSize = (size + 7L) and 0xFFFFFFF8L
@@ -36,7 +38,7 @@ class MemoryStack(initCapacity: Long) : AutoCloseable {
         counterStack.inc()
         container.frameIndex = counterStack.index
         container.stackIndex = containerStack.push(container)
-        container.ptr = base.ptr + offset
+        container.offset = offset
         container.len = size
         container.padding = alignedSize - size
 
@@ -114,7 +116,9 @@ class MemoryStack(initCapacity: Long) : AutoCloseable {
         var stackIndex = 0
         var frameIndex = 0
 
-        override var ptr = Ptr.NULL
+        var offset = 0L
+
+        override val ptr get() = base.ptr + offset
         override var len = 0L
 
         var padding = 0L
@@ -122,27 +126,37 @@ class MemoryStack(initCapacity: Long) : AutoCloseable {
         override fun realloc(newLength: Long, init: Boolean) {
             check(frameIndex == counterStack.index) { "Cannot reallocate ptr from previous stack frame" }
 
-            val prevAddress = ptr
+            val prevOffset = offset
             val prevLength = len
             val prevPadding = padding
 
             if (newLength == prevLength) return
 
+            val alignedLen = (newLength + 7L) and 0xFFFFFFF8L
+            if (alignedLen == prevLength) {
+                len = newLength
+                padding = alignedLen - newLength
+                return
+            }
+
             if (newLength > prevLength) {
                 if (containerStack.peek() !== this) {
                     val otherPointer = malloc0(newLength)
 
-                    ptr = otherPointer.ptr
+                    offset = otherPointer.offset
                     padding = otherPointer.padding
 
-                    otherPointer.ptr = prevAddress
+                    otherPointer.offset = prevOffset
                     otherPointer.len = prevLength
                     otherPointer.padding = prevPadding
 
                     containerStack[stackIndex] = otherPointer
                     containerStack[otherPointer.stackIndex] = this
 
-                    memcpy(prevAddress, ptr, prevLength)
+                    memcpy(otherPointer.ptr, ptr, prevLength)
+                } else {
+                    base.ensureCapacity(ptr.address - base.ptr.address + newLength, false)
+                    baseOffset += (newLength + padding) - (prevLength + prevPadding)
                 }
 
                 len = newLength
@@ -155,6 +169,9 @@ class MemoryStack(initCapacity: Long) : AutoCloseable {
 
                 if (containerStack.peek() !== this) {
                     padding += prevLength - newLength
+                } else {
+                    baseOffset -= (prevLength + padding) - (alignedLen)
+                    padding = alignedLen - newLength
                 }
             }
         }
@@ -169,6 +186,7 @@ class MemoryStack(initCapacity: Long) : AutoCloseable {
             val last = containerStack.pop()
             check(last === this) { "Frame stack is corrupted while releasing top pointers, expected ptr: $this, actual: $last" }
             baseOffset -= len
+            check(baseOffset >= 0) { "Frame stack is corrupted while releasing top pointers, baseOffset: $baseOffset" }
             freeContainer(this)
         }
     }

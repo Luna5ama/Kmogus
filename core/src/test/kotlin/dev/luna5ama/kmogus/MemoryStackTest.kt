@@ -7,6 +7,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
 class MemoryStackTest {
     @BeforeEach
@@ -294,5 +295,72 @@ class MemoryStackTest {
             assertEquals(-1, UNSAFE.getByte(container.ptr.address + 2), "Byte at index 2 is modified")
             assertEquals(-69, UNSAFE.getByte(container.ptr.address + 3), "Byte at index 3 is modified")
         }
+    }
+
+    @Test
+    fun multiRealloc() {
+        MemoryStack {
+            val a = malloc(61L)
+            a.realloc(30L, false)
+            assertEquals(30L, a.len)
+
+            val b = malloc(59L)
+            assertEquals(59L, b.len)
+            checkAddressRange(a, b)
+
+            b.realloc(1020, false)
+            assertEquals(1020L, b.len)
+            checkAddressRange(a, b)
+
+            a.realloc(1032, false)
+            assertEquals(1032L, a.len)
+            checkAddressRange(a, b)
+
+            val c = malloc(2049L)
+            assertEquals(2049L, c.len)
+
+            checkAddressRange(a, c)
+            checkAddressRange(b, c)
+        }
+    }
+
+    @Test
+    fun hugeAlloc() {
+        MemoryStack {
+            val a = malloc(1024 * 1024 * 4)
+            val b = malloc(1024 * 1024 * 4)
+            val c = malloc(1024 * 1024 * 4)
+
+            assertEquals(1024 * 1024 * 4, a.len)
+            assertEquals(1024 * 1024 * 4, b.len)
+            assertEquals(1024 * 1024 * 4, c.len)
+
+            checkAddressRange(a, b)
+            checkAddressRange(a, c)
+            checkAddressRange(b, c)
+        }
+    }
+
+    @Test
+    fun hugeRealloc() {
+        MemoryStack {
+            val a = malloc(1024L)
+            val b = malloc(1024L)
+            a.realloc(1024 * 1024 * 4L, false)
+            b.realloc(1024 * 1024 * 4L, false)
+
+            assertEquals(1024 * 1024 * 4, a.len)
+            assertEquals(1024 * 1024 * 4, b.len)
+
+            checkAddressRange(a, b)
+        }
+    }
+
+    private fun checkAddressRange(a: Arr, b: Arr) {
+        assertTrue(b.ptr.address !in a.ptr.address until a.ptr.address + a.len, "Arr range overlaps with another arr")
+        assertTrue(
+            b.ptr.address + b.len !in a.ptr.address until a.ptr.address + a.len,
+            "Arr range overlaps with another arr"
+        )
     }
 }
