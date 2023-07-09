@@ -123,20 +123,20 @@ class MemoryStack(initCapacity: Long) : AutoCloseable {
 
         var padding = 0L
 
-        override fun realloc(newLength: Long, init: Boolean) {
+        override fun realloc(newLength: Long, init: Boolean): Arr {
             check(frameIndex == counterStack.index) { "Cannot reallocate ptr from previous stack frame" }
 
             val prevOffset = offset
             val prevLength = len
             val prevPadding = padding
 
-            if (newLength == prevLength) return
+            if (newLength == prevLength) return this
 
             val alignedLen = (newLength + 7L) and 0xFFFFFFF8L
             if (alignedLen == prevLength) {
                 len = newLength
                 padding = alignedLen - newLength
-                return
+                return this
             }
 
             if (newLength > prevLength) {
@@ -174,6 +174,8 @@ class MemoryStack(initCapacity: Long) : AutoCloseable {
                     padding = alignedLen - newLength
                 }
             }
+
+            return this
         }
 
         override fun free() {
@@ -198,7 +200,7 @@ class MemoryStack(initCapacity: Long) : AutoCloseable {
             return threadLocal.get()
         }
 
-        inline operator fun <T> invoke(crossinline block: MemoryStack.() -> T): T {
+        inline operator fun <T> invoke(block: MemoryStack.() -> T): T {
             return get().push().use(block)
         }
     }

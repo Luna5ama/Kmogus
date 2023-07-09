@@ -388,8 +388,8 @@ class JomlCodeGenProcessor(private val environment: SymbolProcessorEnvironment) 
 
             addFunction(
                 FunSpec.builder("copyToMutableArr")
-                    .addParameter("arr", MutableArr::class)
-                    .receiver(classInfo.clazz)
+                        .receiver(classInfo.clazz)
+                        .addParameter("arr", MutableArr::class)
                     .addStatement("this.copyTo(arr.ptr)")
                     .addStatement("arr.pos += ${classInfo.size}")
                     .build()
