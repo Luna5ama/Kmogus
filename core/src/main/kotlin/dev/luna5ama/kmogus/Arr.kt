@@ -7,7 +7,7 @@ interface Arr : AutoCloseable {
     val ptr: Ptr
     val len: Long
 
-    fun realloc(newLength: Long, init: Boolean)
+    fun realloc(newLength: Long, init: Boolean): Arr
     fun free()
 
     override fun close() {
@@ -57,7 +57,7 @@ interface Arr : AutoCloseable {
 }
 
 internal class ArrWrapped(override val ptr: Ptr, override val len: Long) : Arr {
-    override fun realloc(newLength: Long, init: Boolean) {
+    override fun realloc(newLength: Long, init: Boolean): Arr {
         throw UnsupportedOperationException("Cannot reallocate wrapped ptr")
     }
 
@@ -96,8 +96,9 @@ internal class ArrImpl(address: Ptr, length: Long) : Arr {
     override val ptr: Ptr get() = delegated.ptr
     override val len: Long get() = delegated.length
 
-    override fun realloc(newLength: Long, init: Boolean) {
+    override fun realloc(newLength: Long, init: Boolean): Arr {
         delegated.realloc(newLength, init)
+        return this
     }
 
     override fun free() {
