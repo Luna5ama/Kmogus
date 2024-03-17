@@ -4,7 +4,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 allprojects {
     group = "dev.luna5ama"
-    version = "1.0.0"
+    version = "1.1-SNAPSHOT"
 }
 
 plugins {

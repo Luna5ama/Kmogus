@@ -1,11 +1,7 @@
-plugins {
-    id("com.google.devtools.ksp")
-}
-
 dependencies {
     api(project(":core"))
     implementation("org.joml:joml:1.10.5")
-    ksp(project(":joml:codegen"))
+//    ktgen(project(":joml:codegen"))
 }
 
 publishing {

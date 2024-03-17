@@ -1,9 +1,5 @@
-plugins {
-    id("com.google.devtools.ksp")
-}
-
 dependencies {
-    ksp(project(":core:codegen"))
+//    ksp(project(":core:codegen"))
 }
 
 publishing {
