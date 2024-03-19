@@ -1,30 +1,23 @@
 package dev.luna5ama.kmogus
 
-import com.google.devtools.ksp.processing.Dependencies
-import com.google.devtools.ksp.processing.Resolver
-import com.google.devtools.ksp.processing.SymbolProcessor
-import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
-import com.google.devtools.ksp.symbol.KSAnnotated
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.ksp.writeTo
+import dev.luna5ama.ktgen.KtgenProcessor
 import org.joml.*
+import java.nio.file.Path
 
-class JomlCodeGenProcessor(private val environment: SymbolProcessorEnvironment) : SymbolProcessor {
-    override fun process(resolver: Resolver): List<KSAnnotated> {
-        genJomlApdaptors(resolver)
-        return emptyList()
+class JomlCodeGen : KtgenProcessor {
+    override fun process(inputs: List<Path>, outputDir: Path) {
+        genJomlApdaptors(outputDir)
     }
 
-    private fun genJomlApdaptors(resolver: Resolver) {
-        if (resolver.getAllFiles().any { it.fileName == "JomlAdapters.kt" }) return
-
+    private fun genJomlApdaptors(outputDir: Path) {
         FileSpec.builder("dev.luna5ama.kmogus", "JomlAdapters")
             .addAnnotation(AnnotationSpec.builder(JvmName::class).addMember(""""JomlAdapters"""").build())
             .addReadOnly()
             .addMutable()
             .build()
-            .writeTo(environment.codeGenerator, Dependencies(false))
+            .writeTo(outputDir)
     }
 
     private val primSize = mapOf(
@@ -388,8 +381,8 @@ class JomlCodeGenProcessor(private val environment: SymbolProcessorEnvironment) 
 
             addFunction(
                 FunSpec.builder("copyToMutableArr")
-                        .receiver(classInfo.clazz)
-                        .addParameter("arr", MutableArr::class)
+                    .receiver(classInfo.clazz)
+                    .addParameter("arr", MutableArr::class)
                     .addStatement("this.copyTo(arr.ptr)")
                     .addStatement("arr.pos += ${classInfo.size}")
                     .build()

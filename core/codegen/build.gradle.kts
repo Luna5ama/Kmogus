@@ -1,5 +1,4 @@
 dependencies {
-    implementation("com.google.devtools.ksp:symbol-processing-api:1.8.21-1.0.11")
-    implementation("com.squareup:kotlinpoet:1.14.2")
-    implementation("com.squareup:kotlinpoet-ksp:1.14.2")
-}
+    val ktgenVersion: String by project
+    implementation("dev.luna5ama:ktgen-api:$ktgenVersion")
+}   

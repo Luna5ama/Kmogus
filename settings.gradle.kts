@@ -5,9 +5,11 @@ pluginManagement {
     }
 
     val kotlinVersion: String by settings
+    val ktgenVersion: String by settings
 
     plugins {
         id("org.jetbrains.kotlin.jvm").version(kotlinVersion)
+        id("dev.luna5ama.ktgen").version(ktgenVersion)
     }
 }
 

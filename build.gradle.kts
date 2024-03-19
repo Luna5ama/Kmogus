@@ -5,16 +5,17 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 allprojects {
     group = "dev.luna5ama"
     version = "1.1-SNAPSHOT"
+
+    repositories {
+        mavenCentral()
+    }
 }
 
 plugins {
     kotlin("jvm")
     `maven-publish`
     id("dev.fastmc.maven-repo").version("1.0.0").apply(false)
-}
-
-repositories {
-    mavenCentral()
+    id("dev.luna5ama.ktgen").version("1.0.0").apply(false)
 }
 
 subprojects {
@@ -35,10 +36,6 @@ subprojects {
             vendor.set(JvmVendorSpec.ADOPTIUM)
         }
         withSourcesJar()
-    }
-
-    repositories {
-        mavenCentral()
     }
 
     dependencies {

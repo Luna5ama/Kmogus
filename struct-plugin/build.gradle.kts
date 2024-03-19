@@ -13,12 +13,6 @@ gradlePlugin {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.21")
-    implementation("com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin:1.8.21-1.0.11")
-
-    implementation("com.google.devtools.ksp:symbol-processing-api:1.8.20-1.0.10")
-    implementation("com.squareup:kotlinpoet:1.14.2")
-    implementation("com.squareup:kotlinpoet-ksp:1.14.2")
     implementation(project(":struct-api"))
 }
 

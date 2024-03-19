@@ -1,7 +1,11 @@
+plugins {
+    id("dev.luna5ama.ktgen")
+}
+
 dependencies {
     api(project(":core"))
     implementation("org.joml:joml:1.10.5")
-//    ktgen(project(":joml:codegen"))
+    ktgen(project("codegen"))
 }
 
 publishing {

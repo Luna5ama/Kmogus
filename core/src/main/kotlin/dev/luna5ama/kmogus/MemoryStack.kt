@@ -153,7 +153,7 @@ class MemoryStack(initCapacity: Long) : AutoCloseable {
                     containerStack[stackIndex] = otherPointer
                     containerStack[otherPointer.stackIndex] = this
 
-                    memcpy(otherPointer.ptr, ptr, prevLength)
+                    memcpy(otherPointer.ptr, 0L, ptr, 0L, prevLength)
                 } else {
                     base.ensureCapacity(ptr.address - base.ptr.address + newLength, false)
                     baseOffset += (newLength + padding) - (prevLength + prevPadding)

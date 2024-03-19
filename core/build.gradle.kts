@@ -1,5 +1,9 @@
+plugins {
+    id("dev.luna5ama.ktgen")
+}
+
 dependencies {
-//    ksp(project(":core:codegen"))
+    ktgen(project("codegen"))
 }
 
 publishing {
