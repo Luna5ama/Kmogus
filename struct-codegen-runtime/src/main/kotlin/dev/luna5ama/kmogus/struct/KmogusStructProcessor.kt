@@ -1,77 +1,83 @@
-package dev.luna5ama.kmogus.struct.ksp
+package dev.luna5ama.kmogus.struct
 
-import com.google.devtools.ksp.KspExperimental
-import com.google.devtools.ksp.getAnnotationsByType
-import com.google.devtools.ksp.processing.Dependencies
-import com.google.devtools.ksp.processing.Resolver
-import com.google.devtools.ksp.processing.SymbolProcessor
-import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
-import com.google.devtools.ksp.symbol.ClassKind
-import com.google.devtools.ksp.symbol.KSAnnotated
-import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.ksp.toClassName
-import com.squareup.kotlinpoet.ksp.writeTo
 import dev.luna5ama.kmogus.Arr
 import dev.luna5ama.kmogus.MemoryStack
 import dev.luna5ama.kmogus.MutableArr
 import dev.luna5ama.kmogus.Ptr
-import dev.luna5ama.kmogus.struct.Field
-import dev.luna5ama.kmogus.struct.Padding
-import dev.luna5ama.kmogus.struct.Struct
+import dev.luna5ama.ktgen.KtgenProcessor
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.tree.ClassNode
 import sun.misc.Unsafe
+import java.nio.file.Path
+import kotlin.reflect.KClass
 import kotlin.reflect.KMutableProperty1
+import kotlin.reflect.full.declaredMemberProperties
+import kotlin.reflect.full.declaredMembers
+import kotlin.reflect.jvm.jvmErasure
 
-class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment) : SymbolProcessor {
-    @OptIn(KspExperimental::class, ExperimentalStdlibApi::class)
-    override fun process(resolver: Resolver): List<KSAnnotated> {
-        val validTypes = mutableSetOf<KSClassDeclaration>()
+class KmogusStructProcessor : KtgenProcessor {
+    override fun process(inputs: List<Path>, outputDir: Path) {
+        val classes = inputs.asSequence()
+            .flatMap { it.toFile().walk() }
+            .filter { it.extension == "class" }
+            .map {
+                ClassNode().apply {
+                    ClassReader(it.readBytes()).accept(this, 0)
+                }
+            }.mapNotNull {
+                try {
+                    Class.forName(it.name.replace('/', '.')).kotlin
+                } catch (e: ClassNotFoundException) {
+                    e.printStackTrace()
+                    null
+                }
+            }.toList()
 
-        val analyzeResults = mutableMapOf<KSClassDeclaration, StructInfo>()
-        val analyzeStruct = DeepRecursiveFunction<KSClassDeclaration, StructInfo> { clazz ->
-            analyzeResults.getOrPut(clazz) {
-                val packageName = clazz.packageName.asString()
-                val simpleName = clazz.simpleName.asString()
+        val validTypes = mutableMapOf<String, KClass<*>>()
 
-                val structAnnotation = clazz.getAnnotationsByType(Struct::class).first()
+        val analyzeResults = mutableMapOf<String, StructInfo>()
+        val analyzeStruct = DeepRecursiveFunction<KClass<*>, StructInfo> { structClazz ->
+            analyzeResults.getOrPut(structClazz.qualifiedName!!) {
+                val packageName = structClazz.qualifiedName!!.substringBeforeLast('.')
+                val simpleName = structClazz.simpleName!!
+
+                val structAnnotation = structClazz.annotations.filterIsInstance<Struct>().first()
                 val sizeAlignment = structAnnotation.sizeAlignment
                 val fieldAlignment = structAnnotation.fieldAlignment
 
                 var offset = 0L
                 val fields = mutableListOf<FieldInfo>()
 
-                for (property in clazz.getAllProperties()) {
-                    val name = property.simpleName.asString()
-                    val type = property.type.resolve()
-                    val className = type.toClassName()
-                    val typeName = className.simpleName
+                val properties = structClazz.declaredMemberProperties.associateBy { it.name }
+                for (field in structClazz.java.declaredFields) {
+                    val property = properties[field.name]!!
+                    val name = property.name
+                    val rType = property.returnType.jvmErasure
 
-                    val paddingAnnotation = property.getAnnotationsByType(Padding::class).firstOrNull()
-                    paddingAnnotation?.let {
+                    property.annotations.filterIsInstance<Padding>().firstOrNull()?.let {
                         val size = it.size
                         offset += size
                     }
 
                     var isPrimitive = true
 
-                    val fieldSize = when (typeName) {
-                        "Byte" -> 1L
-                        "Short" -> 2L
-                        "Int" -> 4L
-                        "Long" -> 8L
-                        "Float" -> 4L
-                        "Double" -> 8L
-                        "Char" -> 2L
-                        "Boolean" -> 1L
+                    val fieldSize = when (rType) {
+                        Boolean::class -> 1L
+                        Byte::class -> 1L
+                        Short::class -> 2L
+                        Char::class -> 2L
+                        Int::class -> 4L
+                        Long::class -> 8L
+                        Float::class -> 4L
+                        Double::class -> 8L
                         else -> {
                             isPrimitive = false
-                            val declaration = type.declaration
-                            if (declaration in validTypes && declaration is KSClassDeclaration) {
-                                callRecursive(declaration).size
-                            } else {
-                                throw Exception("Unsupported type: $typeName")
-                            }
+                            val qualifiedName = rType.qualifiedName!!
+                            validTypes[qualifiedName]?.let {
+                                callRecursive(it).size
+                            } ?: throw RuntimeException("Unknown field type: $qualifiedName")
                         }
                     }
 
@@ -82,11 +88,10 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
                     fields.add(
                         FieldInfo(
                             name,
-                            className,
+                            rType.asClassName(),
                             isPrimitive,
                             offset,
-                            fieldSize,
-                            paddingAnnotation
+                            fieldSize
                         )
                     )
 
@@ -104,22 +109,22 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
             }
         }
 
-        resolver.getSymbolsWithAnnotation("dev.luna5ama.kmogus.struct.Struct")
-            .filterIsInstance<KSClassDeclaration>()
-            .filter { it.classKind == ClassKind.INTERFACE }
-            .toCollection(validTypes)
+        classes.asSequence()
+            .filter { clazz ->
+                clazz.annotations.asSequence().filterIsInstance<Struct>().any()
+            }.forEach {
+                validTypes[it.qualifiedName!!] = it
+            }
 
-        validTypes.asSequence().map {
+        validTypes.values.map {
             analyzeStruct.invoke(it)
         }.forEach {
-            genStruct(it)
+            genStruct(it, outputDir)
         }
-
-        return emptyList()
     }
 
     @OptIn(DelicateKotlinPoetApi::class)
-    private fun genStruct(struct: StructInfo) {
+    private fun genStruct(struct: StructInfo, outputDir: Path) {
         fun TypeSpec.Builder.addConstructor() =
             primaryConstructor(
                 FunSpec.constructorBuilder()
@@ -163,29 +168,29 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
                 FunSpec.builder("dec")
                     .addModifiers(KModifier.OPERATOR)
                     .returns(struct.type)
-                        .addStatement("return ${struct.name}(address - size)")
-                        .build()
+                    .addStatement("return ${struct.name}(address - size)")
+                    .build()
             ).addFunction(
-                    FunSpec.builder("get")
-                            .addModifiers(KModifier.OPERATOR)
-                            .returns(struct.type)
-                            .addParameter("index", Int::class)
-                            .addStatement("return ${struct.name}(address + index.toLong() * size)")
-                            .build()
+                FunSpec.builder("get")
+                    .addModifiers(KModifier.OPERATOR)
+                    .returns(struct.type)
+                    .addParameter("index", Int::class)
+                    .addStatement("return ${struct.name}(address + index.toLong() * size)")
+                    .build()
             ).addFunction(
-                    FunSpec.builder("set")
-                            .addModifiers(KModifier.OPERATOR)
-                            .addParameter("index", Int::class)
-                            .addParameter("value", struct.type)
-                            .addStatement("UNSAFE.copyMemory(value.address, address + index.toLong() * size, size)")
-                            .build()
+                FunSpec.builder("set")
+                    .addModifiers(KModifier.OPERATOR)
+                    .addParameter("index", Int::class)
+                    .addParameter("value", struct.type)
+                    .addStatement("UNSAFE.copyMemory(value.address, address + index.toLong() * size, size)")
+                    .build()
             ).addFunction(
-                    FunSpec.builder("plus")
-                            .addModifiers(KModifier.OPERATOR)
-                            .returns(struct.type)
-                            .addParameter("offset", Long::class)
-                            .addStatement("return ${struct.name}(address + offset)")
-                            .build()
+                FunSpec.builder("plus")
+                    .addModifiers(KModifier.OPERATOR)
+                    .returns(struct.type)
+                    .addParameter("offset", Long::class)
+                    .addStatement("return ${struct.name}(address + offset)")
+                    .build()
             ).addFunction(
                 FunSpec.builder("minus")
                     .addModifiers(KModifier.OPERATOR)
@@ -400,7 +405,8 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
             )
             .addKotlinDefaultImports(includeJvm = true)
             .addType(
-                TypeSpec.valueClassBuilder(struct.name)
+                TypeSpec.classBuilder(struct.name)
+                    .addModifiers(KModifier.VALUE)
                     .addAnnotation(AnnotationSpec.get(struct.structAnnotation, true))
                     .addAnnotation(JvmInline::class)
                     .addConstructor()
@@ -413,7 +419,7 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
             .addHelpers()
             .indent("    ")
             .build()
-            .writeTo(environment.codeGenerator, Dependencies(false))
+            .writeTo(outputDir)
     }
 
     private data class StructInfo(
@@ -431,8 +437,7 @@ class KmogusStructProcessor(private val environment: SymbolProcessorEnvironment)
         val type: ClassName,
         val isPrimitive: Boolean,
         val offset: Long,
-        val size: Long,
-        val paddingAnnotation: Padding?
+        val size: Long
     ) {
         val fieldAnnotation = Field(offset, size)
     }

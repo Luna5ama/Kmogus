@@ -4,16 +4,17 @@ plugins{
 
 gradlePlugin {
     plugins {
-        create("kmogus-struct-plugin") {
-            id = "dev.luna5ama.kmogus-struct-plugin"
-            displayName = "kmogus-struct-plugin"
-            implementationClass = "dev.luna5ama.kmogus.struct.KmogusStructPlugin"
+        create("kmogus-struct-codegen") {
+            id = "dev.luna5ama.kmogus-struct-codegen"
+            displayName = "kmogus-struct-codegen"
+            implementationClass = "dev.luna5ama.kmogus.struct.KmogusStructCodegenPlugin"
         }
     }
 }
 
 dependencies {
     implementation(project(":struct-api"))
+    implementation("dev.luna5ama:ktgen:1.0.0")
 }
 
 tasks {

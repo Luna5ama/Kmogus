@@ -15,4 +15,4 @@ pluginManagement {
 
 include("core", "core:codegen")
 include("joml", "joml:codegen")
-include("struct-api", "struct-plugin")
+include("struct-api", "struct-codegen", "struct-codegen-runtime")

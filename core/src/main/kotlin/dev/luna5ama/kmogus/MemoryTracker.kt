@@ -26,6 +26,7 @@ object MemoryTracker {
                 Ptr.NULL
             }
             ptr.address == 0L -> {
+                counter.addAndGet(newSize)
                 Ptr(UNSAFE.allocateMemory(newSize))
             }
             else -> {

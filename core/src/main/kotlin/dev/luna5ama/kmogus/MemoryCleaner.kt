@@ -36,11 +36,11 @@ internal object MemoryCleaner : Runnable {
 
         @JvmField
         @Volatile
-        var prev = this
+        var prev: Reference? = null
 
         @JvmField
         @Volatile
-        var next = this
+        var next: Reference? = null
 
         fun free() {
             tryRemove()
@@ -49,13 +49,15 @@ internal object MemoryCleaner : Runnable {
 
         private fun tryRemove() {
             synchronized(lock) {
-                if (prev === this && next === this) {
+                val thisNext = this.next
+                val thisPrev = prev
+                if (thisPrev === null && thisNext === null) {
                     return
                 }
-                prev.next = next
-                next.prev = prev
-                prev = this
-                next = this
+                thisPrev?.next = thisNext
+                thisNext?.prev = thisPrev
+                prev = null
+                this.next = null
             }
         }
 
