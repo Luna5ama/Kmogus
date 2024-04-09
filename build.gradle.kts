@@ -8,6 +8,7 @@ allprojects {
 
     repositories {
         mavenCentral()
+        maven("https://maven.luna5ama.dev/")
     }
 }
 
