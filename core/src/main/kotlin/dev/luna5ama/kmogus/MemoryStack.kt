@@ -58,6 +58,7 @@ class MemoryStack(initCapacity: Long) : AutoCloseable {
     fun checkEmpty() {
         check(counterStack.index == -1) { "Memory stack is not empty: frameCounter=${counterStack.index}" }
         check(containerStack.size == 0) { "Memory stack is not empty: containerStack.size=${containerStack.size}" }
+        check(baseOffset == 0L) { "Memory stack is not empty: baseOffset=$baseOffset" }
     }
 
     override fun close() {
@@ -187,7 +188,7 @@ class MemoryStack(initCapacity: Long) : AutoCloseable {
             check(frameIndex == stackTop) { "Frame stack is corrupted while releasing top pointers, expected current frame: $frameIndex, actual: $stackTop" }
             val last = containerStack.pop()
             check(last === this) { "Frame stack is corrupted while releasing top pointers, expected ptr: $this, actual: $last" }
-            baseOffset -= len
+            baseOffset -= len + padding
             check(baseOffset >= 0) { "Frame stack is corrupted while releasing top pointers, baseOffset: $baseOffset" }
             freeContainer(this)
         }
