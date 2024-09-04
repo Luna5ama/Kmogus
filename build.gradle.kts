@@ -1,7 +1,5 @@
 @file:Suppress("UnstableApiUsage")
 
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 allprojects {
     group = "dev.luna5ama"
     version = "1.1-SNAPSHOT"
@@ -16,7 +14,7 @@ plugins {
     kotlin("jvm")
     `maven-publish`
     id("dev.fastmc.maven-repo").version("1.0.0").apply(false)
-    id("dev.luna5ama.ktgen").version("1.0.0").apply(false)
+    id("dev.luna5ama.ktgen").version("1.0.1").apply(false)
 }
 
 subprojects {
@@ -43,6 +41,15 @@ subprojects {
         testImplementation(kotlin("test"))
     }
 
+    kotlin {
+        compilerOptions {
+            freeCompilerArgs = listOf(
+                "-Xjvm-default=all",
+                "-Xbackend-threads=0"
+            )
+        }
+    }
+
     tasks {
         test {
             project.javaToolchains {
@@ -52,16 +59,6 @@ subprojects {
                 })
             }
             useJUnitPlatform()
-        }
-
-        withType<KotlinCompile> {
-            kotlinOptions {
-                freeCompilerArgs = listOf(
-                    "-Xlambdas=indy",
-                    "-Xjvm-default=all",
-                    "-Xbackend-threads=0"
-                )
-            }
         }
     }
 }
