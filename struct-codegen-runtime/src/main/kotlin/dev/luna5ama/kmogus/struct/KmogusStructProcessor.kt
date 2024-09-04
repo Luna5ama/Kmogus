@@ -46,6 +46,7 @@ class KmogusStructProcessor : KtgenProcessor {
                 val structAnnotation = structClazz.annotations.filterIsInstance<Struct>().first()
                 val sizeAlignment = structAnnotation.sizeAlignment
                 val fieldAlignment = structAnnotation.fieldAlignment
+                val size = structAnnotation.size
 
                 var offset = 0L
                 val fields = mutableListOf<FieldInfo>()
@@ -98,7 +99,7 @@ class KmogusStructProcessor : KtgenProcessor {
                     offset += fieldSize
                 }
 
-                val structSize = (offset + sizeAlignment - 1) / sizeAlignment * sizeAlignment
+                val structSize = if (size != -1L) size else (offset + sizeAlignment - 1) / sizeAlignment * sizeAlignment
 
                 StructInfo(
                     simpleName,
